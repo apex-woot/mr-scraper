@@ -84,7 +84,7 @@ export async function loginWithCredentials(
         timeout,
         state: 'visible',
       })
-    } catch (_e) {
+    } catch {
       throw new AuthenticationError(
         'Login form not found. LinkedIn may have changed their page structure or the site is experiencing issues.',
       )
@@ -105,7 +105,7 @@ export async function loginWithCredentials(
           url.toString().includes('authwall'),
         { timeout },
       )
-    } catch (_e) {
+    } catch {
       if (page.url().includes('login')) {
         throw new AuthenticationError(
           'Login failed. Please check your credentials. The page did not navigate after clicking sign in.',
@@ -136,7 +136,7 @@ export async function loginWithCredentials(
     let loggedIn = false
     while (Date.now() - startTime < 5000) {
       if (await isLoggedIn(page)) {
-        console.info('✓ Successfully logged in to LinkedIn')
+        console.info('Successfully logged in to LinkedIn')
         loggedIn = true
         break
       }
@@ -186,7 +186,7 @@ export async function loginWithCookie(
     let loggedIn = false
     while (Date.now() - startTime < 5000) {
       if (await isLoggedIn(page)) {
-        console.info('✓ Successfully authenticated with cookie')
+        console.info('Successfully authenticated with cookie')
         loggedIn = true
         break
       }
@@ -259,7 +259,7 @@ export async function waitForManualLogin(
 
   while (true) {
     if (await isLoggedIn(page)) {
-      console.info('✓ Manual login completed successfully')
+      console.info('Manual login completed successfully')
       return
     }
 

@@ -60,7 +60,7 @@ export async function detectRateLimit(page: Page): Promise<void> {
         3600,
       )
     }
-  } catch (_e) {}
+  } catch {}
 
   try {
     const bodyText = await page.locator('body').textContent({ timeout: 1000 })
@@ -79,7 +79,7 @@ export async function detectRateLimit(page: Page): Promise<void> {
         )
       }
     }
-  } catch (_e) {}
+  } catch {}
 }
 
 export async function waitForElementSmart(
@@ -95,7 +95,7 @@ export async function waitForElementSmart(
 
   try {
     await page.waitForSelector(selector, { timeout, state })
-  } catch (_e) {
+  } catch {
     const context = errorContext ? ` when ${errorContext}` : ''
     const suggestions = getSelectorSuggestions(selector)
 
@@ -130,7 +130,7 @@ export async function extractTextSafe(
     const element = page.locator(selector).first()
     const text = await element.textContent({ timeout })
     return text ? text.trim() : defaultValue
-  } catch (_e) {
+  } catch {
     console.debug(
       `Element not found: ${selector}, returning default: ${defaultValue}`,
     )
@@ -181,7 +181,7 @@ export async function clickSeeMoreButtons(
       } else {
         break
       }
-    } catch (_e) {
+    } catch {
       break
     }
   }
@@ -207,7 +207,7 @@ export async function handleModalClose(page: Page): Promise<boolean> {
       console.debug('Closed modal')
       return true
     }
-  } catch (_e) {}
+  } catch {}
 
   return false
 }
@@ -216,7 +216,7 @@ export async function isPageLoaded(page: Page): Promise<boolean> {
   try {
     const state = await page.evaluate(() => document.readyState)
     return state === 'complete'
-  } catch (_e) {
+  } catch {
     return false
   }
 }
