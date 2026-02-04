@@ -1,5 +1,3 @@
-export const __version__ = '3.1.1'
-
 export * from './auth'
 export * from './browser'
 export * from './callbacks'
