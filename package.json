@@ -1,11 +1,25 @@
 {
   "name": "mr-linkedin",
+  "version": "1.0.0",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "test": "bun test",
+    "scrape": "bun run index.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "playwright": "^1.58.1",
+    "zod": "^4.3.6"
   }
 }
