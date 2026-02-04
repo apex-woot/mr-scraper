@@ -212,7 +212,10 @@ export async function waitAndFocus(
 /**
  * Counts the number of elements matching a selector.
  */
-export async function countElements(page: Page, selector: string): Promise<number> {
+export async function countElements(
+  page: Page,
+  selector: string,
+): Promise<number> {
   try {
     return await page.locator(selector).count()
   } catch {

@@ -79,14 +79,12 @@ export class BrowserManager {
   }
 
   get page(): Page {
-    if (!this._page)
-      throw new Error('Browser not started. Call start() first.')
+    if (!this._page) throw new Error('Browser not started. Call start() first.')
     return this._page
   }
 
   get context(): BrowserContext {
-    if (!this._context)
-      throw new Error('Browser context not initialized.')
+    if (!this._context) throw new Error('Browser context not initialized.')
     return this._context
   }
 

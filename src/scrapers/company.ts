@@ -161,10 +161,7 @@ async function getOverview(page: Page): Promise<Partial<CompanyData>> {
         if (value) {
           if (label.includes('website')) overview.website = value
           else if (label.includes('phone')) overview.phone = value
-          else if (
-            label.includes('headquarters') ||
-            label.includes('location')
-          )
+          else if (label.includes('headquarters') || label.includes('location'))
             overview.headquarters = value
           else if (label.includes('founded')) overview.founded = value
           else if (label.includes('industry') || label.includes('industries'))

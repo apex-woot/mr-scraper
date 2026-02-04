@@ -29,7 +29,9 @@ export function createSilentCallback(): ProgressCallback {
  * @param verbose - Whether to show all progress updates or only milestones
  * @returns ProgressCallback that logs to console
  */
-export function createConsoleCallback(verbose: boolean = true): ProgressCallback {
+export function createConsoleCallback(
+  verbose: boolean = true,
+): ProgressCallback {
   return {
     onStart: (type: string, url: string) => {
       console.info(`Starting ${type} scraping: ${url}`)
@@ -108,7 +110,9 @@ export function createJSONLogCallback(logFile: string): ProgressCallback {
  * @param callbacks - Array of callbacks to forward events to
  * @returns ProgressCallback that invokes all provided callbacks
  */
-export function createMultiCallback(...callbacks: ProgressCallback[]): ProgressCallback {
+export function createMultiCallback(
+  ...callbacks: ProgressCallback[]
+): ProgressCallback {
   return {
     onStart: async (type: string, url: string) => {
       await Promise.all(callbacks.map((c) => c.onStart(type, url)))
@@ -130,4 +134,3 @@ export function createMultiCallback(...callbacks: ProgressCallback[]): ProgressC
     },
   }
 }
-

@@ -168,9 +168,7 @@ async function getApplicantCount(page: Page): Promise<string | null> {
 
 async function getDescription(page: Page): Promise<string | null> {
   try {
-    const aboutHeading = page
-      .locator('h2:has-text("About the job")')
-      .first()
+    const aboutHeading = page.locator('h2:has-text("About the job")').first()
     if ((await aboutHeading.count()) > 0) {
       const article = aboutHeading.locator('xpath=ancestor::article[1]')
       if ((await article.count()) > 0) {

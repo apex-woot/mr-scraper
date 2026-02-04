@@ -38,4 +38,3 @@ export function jobToString(job: JobData): string {
     `  Applicants: ${job.applicantCount}>`
   )
 }
-

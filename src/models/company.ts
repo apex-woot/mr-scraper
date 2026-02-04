@@ -63,4 +63,3 @@ export function companyToString(company: CompanyData): string {
     `  Employees: ${company.employees?.length ?? 0}>`
   )
 }
-

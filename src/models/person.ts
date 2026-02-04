@@ -111,4 +111,3 @@ export function personToString(person: PersonData): string {
     `  Education: ${person.educations.length}>`
   )
 }
-

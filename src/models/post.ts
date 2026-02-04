@@ -42,4 +42,3 @@ export function postToString(post: PostData): string {
     `  Comments: ${post.commentsCount}>`
   )
 }
-
