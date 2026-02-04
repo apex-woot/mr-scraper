@@ -1,9 +1,9 @@
 import type { JobData } from '../models/job'
-import { Job } from '../models/job'
+import { createJob } from '../models/job'
 import { BaseScraper } from './base'
 
 export class JobScraper extends BaseScraper {
-  async scrape(linkedinUrl: string): Promise<Job> {
+  async scrape(linkedinUrl: string): Promise<JobData> {
     console.info(`Starting job scraping: ${linkedinUrl}`)
     await this.callback.onStart('Job', linkedinUrl)
 
@@ -36,7 +36,7 @@ export class JobScraper extends BaseScraper {
     const companyUrl = await this.getCompanyUrl()
     await this.callback.onProgress('Got company URL', 90)
 
-    const job = new Job({
+    const job = createJob({
       linkedinUrl,
       jobTitle: jobTitle ?? undefined,
       company: company ?? undefined,

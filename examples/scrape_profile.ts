@@ -1,6 +1,6 @@
 import {
   BrowserManager,
-  ConsoleCallback,
+  createConsoleCallback,
   loginWithCookie,
   loginWithCredentials,
   PersonScraper,
@@ -43,7 +43,7 @@ async function runExample() {
 
     const scraper = new PersonScraper({
       page: browser.page,
-      callback: new ConsoleCallback(true),
+      callback: createConsoleCallback(true),
     })
 
     const profile = await scraper.scrape(linkedinUrl)
@@ -51,15 +51,15 @@ async function runExample() {
     console.log(`\n${'='.repeat(50)}`)
     console.log('SCRAPE RESULTS:')
     console.log('='.repeat(50))
-    console.log(`Name:     ${profile.data.name}`)
-    console.log(`Location: ${profile.data.location}`)
-    console.log(`About:    ${profile.data.about?.substring(0, 100)}...`)
-    console.log(`Experience Count: ${profile.data.experiences.length}`)
-    console.log(`Education Count:  ${profile.data.educations.length}`)
+    console.log(`Name:     ${profile.name}`)
+    console.log(`Location: ${profile.location}`)
+    console.log(`About:    ${profile.about?.substring(0, 100)}...`)
+    console.log(`Experience Count: ${profile.experiences.length}`)
+    console.log(`Education Count:  ${profile.educations.length}`)
 
-    if (profile.data.experiences.length > 0) {
+    if (profile.experiences.length > 0) {
       console.log('\nLatest Experience:')
-      const latest = profile.data.experiences[0]
+      const latest = profile.experiences[0]
       console.log(`- ${latest?.positionTitle} at ${latest?.institutionName}`)
     }
     console.log(`${'='.repeat(50)}\n`)

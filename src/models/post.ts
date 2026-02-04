@@ -15,28 +15,31 @@ export const PostSchema = z.object({
 
 export type PostData = z.infer<typeof PostSchema>
 
-export class Post {
-  public readonly data: PostData
-
-  constructor(data: PostData) {
-    this.data = PostSchema.parse(data)
-  }
-
-  toJSON() {
-    return this.data
-  }
-
-  toString() {
-    const textPreview =
-      this.data.text && this.data.text.length > 80
-        ? `${this.data.text.slice(0, 80)}...`
-        : this.data.text
-    return (
-      `<Post\n` +
-      `  Text: ${textPreview}\n` +
-      `  Posted: ${this.data.postedDate}\n` +
-      `  Reactions: ${this.data.reactionsCount}\n` +
-      `  Comments: ${this.data.commentsCount}>`
-    )
-  }
+/**
+ * Factory function to create and validate a Post data object
+ * @param data - Raw post data to validate
+ * @returns Validated PostData object
+ */
+export function createPost(data: PostData): PostData {
+  return PostSchema.parse(data)
 }
+
+/**
+ * Convert PostData to a formatted string representation
+ * @param post - PostData object
+ * @returns Formatted string with post details
+ */
+export function postToString(post: PostData): string {
+  const textPreview =
+    post.text && post.text.length > 80
+      ? `${post.text.slice(0, 80)}...`
+      : post.text
+  return (
+    `<Post\n` +
+    `  Text: ${textPreview}\n` +
+    `  Posted: ${post.postedDate}\n` +
+    `  Reactions: ${post.reactionsCount}\n` +
+    `  Comments: ${post.commentsCount}>`
+  )
+}
+

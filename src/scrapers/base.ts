@@ -1,7 +1,7 @@
 import type { Locator, Page } from 'playwright'
 import { isLoggedIn } from '../auth'
 import type { ProgressCallback } from '../callbacks'
-import { SilentCallback } from '../callbacks'
+import { createSilentCallback } from '../callbacks'
 import { AuthenticationError } from '../exceptions'
 import {
   clickSeeMoreButtons,
@@ -24,7 +24,7 @@ export class BaseScraper {
 
   constructor(options: BaseScraperOptions) {
     this.page = options.page
-    this.callback = options.callback || new SilentCallback()
+    this.callback = options.callback || createSilentCallback()
   }
 
   async ensureLoggedIn(): Promise<void> {

@@ -40,24 +40,27 @@ export const CompanySchema = z.object({
 
 export type CompanyData = z.infer<typeof CompanySchema>
 
-export class Company {
-  public readonly data: CompanyData
-
-  constructor(data: CompanyData) {
-    this.data = CompanySchema.parse(data)
-  }
-
-  toJSON() {
-    return this.data
-  }
-
-  toString() {
-    return (
-      `<Company ${this.data.name}\n` +
-      `  Industry: ${this.data.industry}\n` +
-      `  Size: ${this.data.companySize}\n` +
-      `  Headquarters: ${this.data.headquarters}\n` +
-      `  Employees: ${this.data.employees?.length ?? 0}>`
-    )
-  }
+/**
+ * Factory function to create and validate a Company data object
+ * @param data - Raw company data to validate
+ * @returns Validated CompanyData object
+ */
+export function createCompany(data: CompanyData): CompanyData {
+  return CompanySchema.parse(data)
 }
+
+/**
+ * Convert CompanyData to a formatted string representation
+ * @param company - CompanyData object
+ * @returns Formatted string with company details
+ */
+export function companyToString(company: CompanyData): string {
+  return (
+    `<Company ${company.name}\n` +
+    `  Industry: ${company.industry}\n` +
+    `  Size: ${company.companySize}\n` +
+    `  Headquarters: ${company.headquarters}\n` +
+    `  Employees: ${company.employees?.length ?? 0}>`
+  )
+}
+

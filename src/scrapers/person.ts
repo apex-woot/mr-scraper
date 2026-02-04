@@ -8,7 +8,7 @@ import type {
   Interest,
   PersonData,
 } from '../models'
-import { Person } from '../models'
+import { createPerson } from '../models'
 import { BaseScraper } from './base'
 
 /**
@@ -18,7 +18,7 @@ export class PersonScraper extends BaseScraper {
   /**
    * Scrape a LinkedIn person profile.
    */
-  async scrape(linkedinUrl: string): Promise<Person> {
+  async scrape(linkedinUrl: string): Promise<PersonData> {
     await this.callback.onStart('person', linkedinUrl)
 
     try {
@@ -70,7 +70,7 @@ export class PersonScraper extends BaseScraper {
       const contacts = await this.getContacts(linkedinUrl)
       await this.callback.onProgress(`Got ${contacts.length} contacts`, 95)
 
-      const person = new Person({
+      const person = createPerson({
         linkedinUrl,
         name,
         location: location ?? undefined,

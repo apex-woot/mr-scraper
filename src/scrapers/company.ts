@@ -1,9 +1,9 @@
 import type { CompanyData } from '../models/company'
-import { Company } from '../models/company'
+import { createCompany } from '../models/company'
 import { BaseScraper } from './base'
 
 export class CompanyScraper extends BaseScraper {
-  async scrape(linkedinUrl: string): Promise<Company> {
+  async scrape(linkedinUrl: string): Promise<CompanyData> {
     console.info(`Starting company scraping: ${linkedinUrl}`)
     await this.callback.onStart('company', linkedinUrl)
 
@@ -21,7 +21,7 @@ export class CompanyScraper extends BaseScraper {
     const overview = await this.getOverview()
     await this.callback.onProgress('Got overview details', 50)
 
-    const company = new Company({
+    const company = createCompany({
       linkedinUrl,
       name,
       aboutUs: aboutUs ?? undefined,

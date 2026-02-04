@@ -69,33 +69,46 @@ export const PersonSchema = z.object({
 
 export type PersonData = z.infer<typeof PersonSchema>
 
-export class Person {
-  public readonly data: PersonData
-
-  constructor(data: PersonData) {
-    this.data = PersonSchema.parse(data)
-  }
-
-  get company(): string | undefined {
-    return this.data.experiences[0]?.institutionName
-  }
-
-  get jobTitle(): string | undefined {
-    return this.data.experiences[0]?.positionTitle
-  }
-
-  toJSON() {
-    return this.data
-  }
-
-  toString() {
-    return (
-      `<Person ${this.data.name}\n` +
-      `  Company: ${this.company}\n` +
-      `  Title: ${this.jobTitle}\n` +
-      `  Location: ${this.data.location}\n` +
-      `  Experiences: ${this.data.experiences.length}\n` +
-      `  Education: ${this.data.educations.length}>`
-    )
-  }
+/**
+ * Factory function to create and validate a Person data object
+ * @param data - Raw person data to validate
+ * @returns Validated PersonData object
+ */
+export function createPerson(data: PersonData): PersonData {
+  return PersonSchema.parse(data)
 }
+
+/**
+ * Get the company name from the person's most recent experience
+ * @param person - PersonData object
+ * @returns Company name or undefined if no experiences
+ */
+export function getPersonCompany(person: PersonData): string | undefined {
+  return person.experiences[0]?.institutionName
+}
+
+/**
+ * Get the job title from the person's most recent experience
+ * @param person - PersonData object
+ * @returns Job title or undefined if no experiences
+ */
+export function getPersonJobTitle(person: PersonData): string | undefined {
+  return person.experiences[0]?.positionTitle
+}
+
+/**
+ * Convert PersonData to a formatted string representation
+ * @param person - PersonData object
+ * @returns Formatted string with person details
+ */
+export function personToString(person: PersonData): string {
+  return (
+    `<Person ${person.name}\n` +
+    `  Company: ${getPersonCompany(person)}\n` +
+    `  Title: ${getPersonJobTitle(person)}\n` +
+    `  Location: ${person.location}\n` +
+    `  Experiences: ${person.experiences.length}\n` +
+    `  Education: ${person.educations.length}>`
+  )
+}
+

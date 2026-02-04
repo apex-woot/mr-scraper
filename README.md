@@ -39,7 +39,7 @@ const scraper = new PersonScraper({
   callback: new ConsoleCallback() 
 });
 
-const profile = await scraper.scrape("https://www.linkedin.com/in/williamhgates/");
+const profile = await scraper.scrape("https://www.linkedin.com/in/vitalii-kohut-7081161aa/");
 console.log(profile.data.name);
 
 await browser.close();
@@ -48,11 +48,13 @@ await browser.close();
 ## Development
 
 ### Run Tests
+
 ```bash
 bun test
 ```
 
 ### Type Check
+
 ```bash
 bun x tsc --noEmit
 ```

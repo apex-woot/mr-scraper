@@ -16,23 +16,26 @@ export const JobSchema = z.object({
 
 export type JobData = z.infer<typeof JobSchema>
 
-export class Job {
-  public readonly data: JobData
-
-  constructor(data: JobData) {
-    this.data = JobSchema.parse(data)
-  }
-
-  toJSON() {
-    return this.data
-  }
-
-  toString() {
-    return (
-      `<Job ${this.data.jobTitle} at ${this.data.company}\n` +
-      `  Location: ${this.data.location}\n` +
-      `  Posted: ${this.data.postedDate}\n` +
-      `  Applicants: ${this.data.applicantCount}>`
-    )
-  }
+/**
+ * Factory function to create and validate a Job data object
+ * @param data - Raw job data to validate
+ * @returns Validated JobData object
+ */
+export function createJob(data: JobData): JobData {
+  return JobSchema.parse(data)
 }
+
+/**
+ * Convert JobData to a formatted string representation
+ * @param job - JobData object
+ * @returns Formatted string with job details
+ */
+export function jobToString(job: JobData): string {
+  return (
+    `<Job ${job.jobTitle} at ${job.company}\n` +
+    `  Location: ${job.location}\n` +
+    `  Posted: ${job.postedDate}\n` +
+    `  Applicants: ${job.applicantCount}>`
+  )
+}
+

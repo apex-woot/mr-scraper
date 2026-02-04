@@ -1,9 +1,9 @@
 import type { PostData } from '../models/post'
-import { Post } from '../models/post'
+import { createPost } from '../models/post'
 import { BaseScraper } from './base'
 
 export class CompanyPostsScraper extends BaseScraper {
-  async scrape(companyUrl: string, limit: number = 10): Promise<Post[]> {
+  async scrape(companyUrl: string, limit: number = 10): Promise<PostData[]> {
     console.info(`Starting company posts scraping: ${companyUrl}`)
     await this.callback.onStart('company_posts', companyUrl)
 
@@ -75,8 +75,8 @@ export class CompanyPostsScraper extends BaseScraper {
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
 
-  protected async scrapePosts(limit: number): Promise<Post[]> {
-    const posts: Post[] = []
+  protected async scrapePosts(limit: number): Promise<PostData[]> {
+    const posts: PostData[] = []
     let scrollCount = 0
     const maxScrolls = Math.floor(limit / 3) + 2
 
@@ -84,7 +84,7 @@ export class CompanyPostsScraper extends BaseScraper {
       const newPosts = await this.extractPostsFromPage()
 
       for (const post of newPosts) {
-        if (post.data.urn && !posts.some((p) => p.data.urn === post.data.urn)) {
+        if (post.urn && !posts.some((p) => p.urn === post.urn)) {
           posts.push(post)
           if (posts.length >= limit) break
         }
@@ -99,11 +99,11 @@ export class CompanyPostsScraper extends BaseScraper {
     return posts.slice(0, limit)
   }
 
-  protected async extractPostsFromPage(): Promise<Post[]> {
+  protected async extractPostsFromPage(): Promise<PostData[]> {
     return await this.extractPostsViaJs()
   }
 
-  protected async extractPostsViaJs(): Promise<Post[]> {
+  protected async extractPostsViaJs(): Promise<PostData[]> {
     const postsData = await this.page.evaluate(() => {
       const posts: any[] = []
       const html = document.body.innerHTML
@@ -209,10 +209,10 @@ export class CompanyPostsScraper extends BaseScraper {
       return posts
     })
 
-    const result: Post[] = []
+    const result: PostData[] = []
     for (const data of postsData) {
       const activityId = data.urn.replace('urn:li:activity:', '')
-      const post = new Post({
+      const post = createPost({
         linkedinUrl: `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`,
         urn: data.urn,
         text: data.text,
@@ -238,7 +238,7 @@ export class CompanyPostsScraper extends BaseScraper {
     }
     const parts = text.split('•')
     if (parts.length > 0) {
-      return parts[0]?.trim()
+      return parts[0]?.trim() ?? null
     }
     return null
   }
