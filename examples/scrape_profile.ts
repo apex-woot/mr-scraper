@@ -3,7 +3,7 @@ import {
   createConsoleCallback,
   loginWithCookie,
   loginWithCredentials,
-  PersonScraper,
+  scrapePerson,
 } from '../src'
 
 async function runExample() {
@@ -41,12 +41,9 @@ async function runExample() {
       )
     }
 
-    const scraper = new PersonScraper({
-      page: browser.page,
+    const profile = await scrapePerson(browser.page, linkedinUrl, {
       callback: createConsoleCallback(true),
     })
-
-    const profile = await scraper.scrape(linkedinUrl)
 
     console.log(`\n${'='.repeat(50)}`)
     console.log('SCRAPE RESULTS:')
