@@ -46,6 +46,7 @@ jobs:
 
       - name: Run tests
         run: bun test
+        timeout-minutes: 5
 
       - name: Build package
         run: bun run build
