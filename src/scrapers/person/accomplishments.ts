@@ -1,6 +1,8 @@
 import type { Locator, Page } from 'playwright'
 import type { Accomplishment } from '../../models'
+import { log } from '../../utils/logger'
 import { navigateAndWait, waitAndFocus } from '../utils'
+import { deduplicateItems, parseItems } from './common-patterns'
 
 export async function getAccomplishments(
   page: Page,
@@ -39,20 +41,17 @@ export async function getAccomplishments(
       let items = await mainList.locator('.pvs-list__paged-list-item').all()
       if (items.length === 0) items = await mainList.locator('> li').all()
 
-      const seenTitles = new Set<string>()
-      for (const item of items) {
-        try {
-          const accomplishment = await parseAccomplishmentItem(item, category)
-          if (accomplishment && !seenTitles.has(accomplishment.title)) {
-            seenTitles.add(accomplishment.title)
-            accomplishments.push(accomplishment)
-          }
-        } catch (e) {
-          console.debug(`Error parsing ${category} item: ${e}`)
-        }
-      }
+      const parsed = await parseItems(
+        items,
+        async (item, _idx) => await parseAccomplishmentItem(item, category),
+        { itemType: category },
+      )
+
+      // Deduplicate by title within this section
+      const unique = deduplicateItems(parsed, (a) => a.title)
+      accomplishments.push(...unique)
     } catch (e) {
-      console.debug(`Error getting ${category}s: ${e}`)
+      log.debug(`Error getting ${category}s: ${e}`)
     }
   }
 
@@ -119,7 +118,7 @@ async function parseAccomplishmentItem(
       credentialUrl: credentialUrl || undefined,
     }
   } catch (e) {
-    console.debug(`Error parsing accomplishment: ${e}`)
+    log.debug(`Error parsing accomplishment: ${e}`)
     return null
   }
 }
