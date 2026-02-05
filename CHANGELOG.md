@@ -1,0 +1,7 @@
+# Changelog
+
+## [1.0.10](https://github.com/apex-woot/mr-linkedin/compare/v1.1.1...v1.0.10) (2026-02-05)
+
+### Bug Fixes
+
+* manually decrease the version ([6424c6f](https://github.com/apex-woot/mr-linkedin/commit/6424c6fe9cad8d9f7043eb1b36971118a573bbe4))
