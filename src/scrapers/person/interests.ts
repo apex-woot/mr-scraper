@@ -1,6 +1,8 @@
 import type { Locator, Page } from 'playwright'
 import type { Interest } from '../../models'
+import { log } from '../../utils/logger'
 import { navigateAndWait, waitAndFocus } from '../utils'
+import { parseItems } from './common-patterns'
 import {
   extractUniqueTextsFromElement,
   mapInterestTabToCategory,
@@ -42,18 +44,15 @@ export async function getInterests(
               .first()
             if ((await tabpanel.count()) > 0) {
               const listItems = await tabpanel.locator('li, listitem').all()
-
-              for (const item of listItems) {
-                try {
-                  const interest = await parseInterestItem(item, category)
-                  if (interest) interests.push(interest)
-                } catch (e) {
-                  console.debug(`Error parsing interest item: ${e}`)
-                }
-              }
+              const parsed = await parseItems(
+                listItems,
+                async (item, _idx) => await parseInterestItem(item, category),
+                { itemType: 'interest item' },
+              )
+              interests.push(...parsed)
             }
           } catch (e) {
-            console.debug(`Error processing interest tab: ${e}`)
+            log.debug(`Error processing interest tab: ${e}`)
           }
         }
       }
@@ -81,21 +80,19 @@ export async function getInterests(
             .locator('listitem, li, .pvs-list__paged-list-item')
             .all()
 
-          for (const item of listItems) {
-            try {
-              const interest = await parseInterestItem(item, category)
-              if (interest) interests.push(interest)
-            } catch (e) {
-              console.debug(`Error parsing interest item: ${e}`)
-            }
-          }
+          const parsed = await parseItems(
+            listItems,
+            async (item, _idx) => await parseInterestItem(item, category),
+            { itemType: 'interest item' },
+          )
+          interests.push(...parsed)
         } catch (e) {
-          console.debug(`Error processing interest tab: ${e}`)
+          log.debug(`Error processing interest tab: ${e}`)
         }
       }
     }
   } catch (e) {
-    console.warn(`Error getting interests: ${e}`)
+    log.warning(`Error getting interests: ${e}`)
   }
 
   return interests
@@ -116,7 +113,7 @@ async function parseInterestItem(
     if (name && href) return { name, category, linkedinUrl: href }
     return null
   } catch (e) {
-    console.debug(`Error parsing interest: ${e}`)
+    log.debug(`Error parsing interest: ${e}`)
     return null
   }
 }
