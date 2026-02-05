@@ -1,6 +1,7 @@
 import type { Page } from 'playwright'
 import { AuthenticationError } from './exceptions'
 import { detectRateLimit } from './utils'
+import { log } from './utils/logger'
 
 export async function warmUpBrowser(page: Page): Promise<void> {
   const sites = [
@@ -9,19 +10,19 @@ export async function warmUpBrowser(page: Page): Promise<void> {
     'https://www.github.com',
   ]
 
-  console.info('Warming up browser by visiting normal sites...')
+  log.info('Warming up browser by visiting normal sites...')
 
   for (const site of sites) {
     try {
       await page.goto(site, { waitUntil: 'domcontentloaded', timeout: 10000 })
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      console.debug(`Visited ${site}`)
+      log.debug(`Visited ${site}`)
     } catch (e) {
-      console.debug(`Could not visit ${site}: ${e}`)
+      log.debug(`Could not visit ${site}: ${e}`)
     }
   }
 
-  console.info('Browser warm-up complete')
+  log.info('Browser warm-up complete')
 }
 
 export function loadCredentialsFromEnv(): {
@@ -70,7 +71,7 @@ export async function loginWithCredentials(
     await warmUpBrowser(page)
   }
 
-  console.info('Logging in to LinkedIn...')
+  log.info('Logging in to LinkedIn...')
 
   try {
     await page.goto('https://www.linkedin.com/login', {
@@ -93,7 +94,7 @@ export async function loginWithCredentials(
     await page.fill('#username', email)
     await page.fill('#password', password)
 
-    console.debug('Credentials entered')
+    log.debug('Credentials entered')
 
     await page.click('button[type="submit"]')
 
@@ -136,7 +137,7 @@ export async function loginWithCredentials(
     let loggedIn = false
     while (Date.now() - startTime < 5000) {
       if (await isLoggedIn(page)) {
-        console.info('Successfully logged in to LinkedIn')
+        log.info('Successfully logged in to LinkedIn')
         loggedIn = true
         break
       }
@@ -144,7 +145,7 @@ export async function loginWithCredentials(
     }
 
     if (!loggedIn) {
-      console.warn(
+      log.warning(
         'Could not verify login by finding navigation element. Proceeding anyway...',
       )
     }
@@ -160,7 +161,7 @@ export async function loginWithCookie(
   page: Page,
   cookieValue: string,
 ): Promise<void> {
-  console.info('Logging in with cookie...')
+  log.info('Logging in with cookie...')
 
   try {
     await page.context().addCookies([
@@ -186,7 +187,7 @@ export async function loginWithCookie(
     let loggedIn = false
     while (Date.now() - startTime < 5000) {
       if (await isLoggedIn(page)) {
-        console.info('Successfully authenticated with cookie')
+        log.info('Successfully authenticated with cookie')
         loggedIn = true
         break
       }
@@ -194,7 +195,7 @@ export async function loginWithCookie(
     }
 
     if (!loggedIn) {
-      console.warn('Could not verify cookie login. Proceeding anyway...')
+      log.warning('Could not verify cookie login. Proceeding anyway...')
     }
   } catch (e) {
     if (e instanceof AuthenticationError) {
@@ -250,7 +251,7 @@ export async function waitForManualLogin(
   page: Page,
   timeout: number = 300000,
 ): Promise<void> {
-  console.info(
+  log.info(
     '⏳ Please complete the login process manually in the browser. ' +
       'Waiting up to 5 minutes...',
   )
@@ -259,7 +260,7 @@ export async function waitForManualLogin(
 
   while (true) {
     if (await isLoggedIn(page)) {
-      console.info('Manual login completed successfully')
+      log.info('Manual login completed successfully')
       return
     }
 

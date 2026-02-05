@@ -1,7 +1,7 @@
 import type { Locator, Page } from 'playwright'
-import type { Patent } from '../../models/person'
 import { SCRAPING_CONSTANTS } from '../../config/constants'
 import { PATENT_ITEM_SELECTORS } from '../../config/selectors'
+import type { Patent } from '../../models/person'
 import { log } from '../../utils/logger'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
@@ -53,9 +53,7 @@ function isValidLink({ href }: LinkCandidate): boolean {
  * Determines if a link is patent-specific based on text or URL content
  */
 function isPatentSpecific({ href, text }: LinkCandidate): boolean {
-  return (
-    text?.toLowerCase().includes('show patent') || href.includes('patent')
-  )
+  return text?.toLowerCase().includes('show patent') || href.includes('patent')
 }
 
 /**
@@ -136,8 +134,13 @@ export async function getPatents(
         SCRAPING_CONSTANTS.PATENTS_MAX_SCROLLS,
       )
 
-      const itemsResult = await trySelectorsForAll(page, PATENT_ITEM_SELECTORS, 0)
+      const itemsResult = await trySelectorsForAll(
+        page,
+        PATENT_ITEM_SELECTORS,
+        0,
+      )
 
+      log.info(`Got ${itemsResult.value.length} patents`)
       log.debug(
         `Found ${itemsResult.value.length} patent items using: ${itemsResult.usedSelector}`,
       )

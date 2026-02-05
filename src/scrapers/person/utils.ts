@@ -1,5 +1,6 @@
 import type { Locator } from 'playwright'
 import { DATE_PATTERNS, SCRAPING_CONSTANTS } from '../../config/constants'
+import { log } from '../../utils/logger'
 
 /**
  * Extracts unique text content from an element's children.
@@ -81,7 +82,10 @@ export function parseDateRange(
       // Normalize "current" keywords to standard "Present"
       if (toDate) {
         for (const keyword of DATE_PATTERNS.CURRENT_KEYWORDS) {
-          if (toDate === keyword || toDate.toLowerCase() === keyword.toLowerCase()) {
+          if (
+            toDate === keyword ||
+            toDate.toLowerCase() === keyword.toLowerCase()
+          ) {
             toDate = 'Present'
             break
           }
@@ -102,7 +106,7 @@ export function parseDateRange(
     }
     return result
   } catch (e) {
-    console.debug(`Error parsing date range '${dateString}': ${e}`)
+    log.debug(`Error parsing date range '${dateString}': ${e}`)
     const result: DateParseResult = { fromDate: null, toDate: null }
     if (options.includeDuration) {
       result.duration = null

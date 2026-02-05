@@ -11,6 +11,7 @@ import {
   scrollToBottom,
   scrollToHalf,
 } from '../utils'
+import { log } from '../utils/logger'
 
 /**
  * Ensures the user is logged in to LinkedIn.
@@ -61,7 +62,7 @@ export async function scrollElementIntoView(
     const element = page.locator(selector).first()
     await element.scrollIntoViewIfNeeded()
   } catch (e) {
-    console.debug(`Could not scroll element into view: ${selector} - ${e}`)
+    log.debug(`Could not scroll element into view: ${selector} - ${e}`)
   }
 }
 
@@ -118,7 +119,7 @@ export async function safeClick(
       },
     )
   } catch {
-    console.debug(`Could not click element: ${selector}`)
+    log.debug(`Could not click element: ${selector}`)
     return false
   }
 }
@@ -133,7 +134,7 @@ export async function waitForNavigationComplete(
   try {
     await page.waitForLoadState('networkidle', { timeout })
   } catch {
-    console.warn('Navigation did not complete within timeout')
+    log.warning('Navigation did not complete within timeout')
   }
 }
 
@@ -169,7 +170,7 @@ export async function extractListItems(
     const items = await container.locator(itemSelector).all()
     return items
   } catch {
-    console.warn(
+    log.warning(
       `Container not found or error extracting items: ${containerSelector}`,
     )
     return []

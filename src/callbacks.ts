@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
+import { log as logger } from './utils/logger'
 
 export interface ProgressCallback {
   onStart(type: string, url: string): Promise<void> | void
-  onProgress(message: string, percent: number): Promise<void> | void
   onComplete(type: string, data: any): Promise<void> | void
   onInfo(message: string): Promise<void> | void
   onWarning(message: string): Promise<void> | void
@@ -16,7 +16,6 @@ export interface ProgressCallback {
 export function createSilentCallback(): ProgressCallback {
   return {
     onStart: (_type: string, _url: string) => {},
-    onProgress: (_message: string, _percent: number) => {},
     onComplete: (_type: string, _data: any) => {},
     onInfo: (_message: string) => {},
     onWarning: (_message: string) => {},
@@ -25,54 +24,25 @@ export function createSilentCallback(): ProgressCallback {
 }
 
 /**
- * Factory function to create a console callback that logs to stdout/stderr
- * @param verbose - Whether to show all progress updates or only milestones
+ * Factory function to create a console callback that logs via the standard logger
  * @returns ProgressCallback that logs to console
  */
-export function createConsoleCallback(
-  verbose: boolean = true,
-): ProgressCallback {
+export function createConsoleCallback(): ProgressCallback {
   return {
     onStart: (type: string, url: string) => {
-      console.info(`Starting ${type} scraping: ${url}`)
-    },
-    onProgress: (message: string, percent: number) => {
-      if (verbose || percent % 20 === 0) {
-        const barLength = 30
-        const filled = Math.floor((barLength * percent) / 100)
-        const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled)
-        const output = `\r[${bar}] ${percent}% - ${message}`
-
-        if (process.stdout.isTTY) {
-          process.stdout.write(output)
-        } else {
-          console.log(output.trim())
-        }
-      }
+      logger.info(`Starting ${type} scraping: ${url}`)
     },
     onComplete: (type: string, _data: any) => {
-      if (process.stdout.isTTY) {
-        process.stdout.write('\r\x1b[K')
-      }
-      console.info(`Completed ${type} scraping successfully`)
+      logger.success(`Completed ${type} scraping successfully`)
     },
     onInfo: (message: string) => {
-      if (process.stdout.isTTY) {
-        process.stdout.write('\r\x1b[K')
-      }
-      console.info(`[Info] ${message}`)
+      logger.info(message)
     },
     onWarning: (message: string) => {
-      if (process.stdout.isTTY) {
-        process.stdout.write('\r\x1b[K')
-      }
-      console.warn(`[Warning] ${message}`)
+      logger.warning(message)
     },
     onError: (message: string, error?: Error) => {
-      if (process.stdout.isTTY) {
-        process.stdout.write('\r\x1b[K')
-      }
-      console.error(`Error: ${message}`, error?.message ?? '')
+      logger.error(`${message}${error ? ` - ${error.message}` : ''}`)
     },
   }
 }
@@ -83,7 +53,7 @@ export function createConsoleCallback(
  * @returns ProgressCallback that writes JSON logs
  */
 export function createJSONLogCallback(logFile: string): ProgressCallback {
-  async function log(eventType: string, data: any): Promise<void> {
+  async function logToFile(eventType: string, data: any): Promise<void> {
     const entry = {
       timestamp: new Date().toISOString(),
       event_type: eventType,
@@ -93,28 +63,25 @@ export function createJSONLogCallback(logFile: string): ProgressCallback {
     try {
       await fs.appendFile(logFile, `${JSON.stringify(entry)}\n`)
     } catch (e) {
-      console.error(`Failed to write to log file: ${e}`)
+      logger.error(`Failed to write to log file: ${e}`)
     }
   }
 
   return {
     onStart: async (type: string, url: string) => {
-      await log('start', { scraper_type: type, url })
-    },
-    onProgress: async (message: string, percent: number) => {
-      await log('progress', { message, percent })
+      await logToFile('start', { scraper_type: type, url })
     },
     onComplete: async (type: string, _data: any) => {
-      await log('complete', { scraper_type: type })
+      await logToFile('complete', { scraper_type: type })
     },
     onInfo: async (message: string) => {
-      await log('info', { message })
+      await logToFile('info', { message })
     },
     onWarning: async (message: string) => {
-      await log('warning', { message })
+      await logToFile('warning', { message })
     },
     onError: async (message: string, error?: Error) => {
-      await log('error', {
+      await logToFile('error', {
         error: message,
         error_type: error?.name ?? 'Error',
         details: error?.message,
@@ -134,9 +101,6 @@ export function createMultiCallback(
   return {
     onStart: async (type: string, url: string) => {
       await Promise.all(callbacks.map((c) => c.onStart(type, url)))
-    },
-    onProgress: async (message: string, percent: number) => {
-      await Promise.all(callbacks.map((c) => c.onProgress(message, percent)))
     },
     onComplete: async (type: string, data: any) => {
       await Promise.all(callbacks.map((c) => c.onComplete(type, data)))

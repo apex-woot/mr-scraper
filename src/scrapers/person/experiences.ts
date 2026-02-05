@@ -45,6 +45,7 @@ export async function getExperiences(
       0,
     )
 
+    log.info(`Got ${itemsResult.value.length} experiences`)
     log.debug(
       `Found ${itemsResult.value.length} experience items using: ${itemsResult.usedSelector}`,
     )

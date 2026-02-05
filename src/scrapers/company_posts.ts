@@ -2,6 +2,7 @@ import type { Page } from 'playwright'
 import type { ProgressCallback } from '../callbacks'
 import type { PostData } from '../models/post'
 import { createPost } from '../models/post'
+import { log } from '../utils/logger'
 import { checkRateLimit, navigateAndWait } from './utils'
 
 export interface CompanyPostsScraperOptions {
@@ -19,23 +20,21 @@ export async function scrapeCompanyPosts(
 ): Promise<PostData[]> {
   const callback = options?.callback
 
-  console.info(`Starting company posts scraping: ${companyUrl}`)
   await callback?.onStart('company_posts', companyUrl)
 
   const postsUrl = buildPostsUrl(companyUrl)
   await navigateAndWait(page, postsUrl, callback)
-  await callback?.onProgress('Navigated to posts page', 10)
+  log.debug('Navigated to posts page')
 
   await checkRateLimit(page)
 
   await waitForPostsToLoad(page)
-  await callback?.onProgress('Posts loaded', 20)
+  log.debug('Posts loaded')
 
   const posts = await scrapePosts(page, limit)
-  await callback?.onProgress(`Scraped ${posts.length} posts`, 100)
+  log.debug(`Scraped ${posts.length} posts`)
   await callback?.onComplete('company_posts', posts)
 
-  console.info(`Successfully scraped ${posts.length} posts`)
   return posts
 }
 
@@ -54,7 +53,7 @@ async function waitForPostsToLoad(
   try {
     await page.waitForLoadState('domcontentloaded', { timeout })
   } catch (e) {
-    console.debug(`DOM load timeout: ${e}`)
+    log.debug(`DOM load timeout: ${e}`)
   }
 
   await new Promise((resolve) => setTimeout(resolve, 3000))
@@ -67,14 +66,14 @@ async function waitForPostsToLoad(
     })
 
     if (hasPosts) {
-      console.debug(`Posts found after attempt ${attempt + 1}`)
+      log.debug(`Posts found after attempt ${attempt + 1}`)
       return
     }
 
     await new Promise((resolve) => setTimeout(resolve, 2000))
   }
 
-  console.warn('Posts may not have loaded fully')
+  log.warning('Posts may not have loaded fully')
 }
 
 async function triggerLazyLoad(page: Page): Promise<void> {
@@ -277,6 +276,6 @@ async function scrollForMorePosts(page: Page): Promise<void> {
     await page.keyboard.press('End')
     await new Promise((resolve) => setTimeout(resolve, 1500))
   } catch (e) {
-    console.debug(`Error scrolling: ${e}`)
+    log.debug(`Error scrolling: ${e}`)
   }
 }

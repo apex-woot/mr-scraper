@@ -1,5 +1,6 @@
 import type { Page } from 'playwright'
 import type { Contact } from '../../models'
+import { log } from '../../utils/logger'
 import { navigateAndWait, waitAndFocus } from '../utils'
 import { mapContactHeadingToType } from './utils'
 
@@ -16,7 +17,7 @@ export async function getContacts(
 
     const dialog = page.locator('dialog, [role="dialog"]').first()
     if ((await dialog.count()) === 0) {
-      console.warn('Contact info dialog not found')
+      log.warning('Contact info dialog not found')
       return contacts
     }
 
@@ -109,11 +110,11 @@ export async function getContacts(
           }
         }
       } catch (e) {
-        console.debug(`Error parsing contact section: ${e}`)
+        log.debug(`Error parsing contact section: ${e}`)
       }
     }
   } catch (e) {
-    console.warn(`Error getting contacts: ${e}`)
+    log.warning(`Error getting contacts: ${e}`)
   }
 
   return contacts

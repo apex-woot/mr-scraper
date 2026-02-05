@@ -2,6 +2,7 @@ import type { Page } from 'playwright'
 import type { ProgressCallback } from '../callbacks'
 import type { JobData } from '../models/job'
 import { createJob } from '../models/job'
+import { log } from '../utils/logger'
 import { checkRateLimit, navigateAndWait } from './utils'
 
 export interface JobScraperOptions {
@@ -18,34 +19,33 @@ export async function scrapeJob(
 ): Promise<JobData> {
   const callback = options?.callback
 
-  console.info(`Starting job scraping: ${linkedinUrl}`)
   await callback?.onStart('Job', linkedinUrl)
 
   await navigateAndWait(page, linkedinUrl, callback)
-  await callback?.onProgress('Navigated to job page', 10)
+  log.debug('Navigated to job page')
 
   await checkRateLimit(page)
 
   const jobTitle = await getJobTitle(page)
-  await callback?.onProgress(`Got job title: ${jobTitle ?? 'Unknown'}`, 20)
+  log.debug(`Got job title: ${jobTitle ?? 'Unknown'}`)
 
   const company = await getCompany(page)
-  await callback?.onProgress('Got company name', 30)
+  log.debug('Got company name')
 
   const location = await getLocation(page)
-  await callback?.onProgress('Got location', 40)
+  log.debug('Got location')
 
   const postedDate = await getPostedDate(page)
-  await callback?.onProgress('Got posted date', 50)
+  log.debug('Got posted date')
 
   const applicantCount = await getApplicantCount(page)
-  await callback?.onProgress('Got applicant count', 60)
+  log.debug('Got applicant count')
 
   const jobDescription = await getDescription(page)
-  await callback?.onProgress('Got job description', 80)
+  log.debug('Got job description')
 
   const companyUrl = await getCompanyUrl(page)
-  await callback?.onProgress('Got company URL', 90)
+  log.debug('Got company URL')
 
   const job = createJob({
     linkedinUrl,
@@ -58,10 +58,9 @@ export async function scrapeJob(
     jobDescription: jobDescription ?? undefined,
   } as JobData)
 
-  await callback?.onProgress('Scraping complete', 100)
+  log.debug('Scraping complete')
   await callback?.onComplete('Job', job)
 
-  console.info(`Successfully scraped job: ${jobTitle ?? 'Unknown'}`)
   return job
 }
 

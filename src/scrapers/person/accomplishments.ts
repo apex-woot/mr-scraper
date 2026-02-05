@@ -41,6 +41,7 @@ export async function getAccomplishments(
       let items = await mainList.locator('.pvs-list__paged-list-item').all()
       if (items.length === 0) items = await mainList.locator('> li').all()
 
+      log.info(`Got ${items.length} ${category} candidates`)
       const parsed = await parseItems(
         items,
         async (item, _idx) => await parseAccomplishmentItem(item, category),

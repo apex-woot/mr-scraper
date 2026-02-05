@@ -1,5 +1,6 @@
 import type { Locator, Page } from 'playwright'
 import type { SelectorGroup } from '../config/selectors'
+import { log } from './logger'
 
 /**
  * Result from attempting to find an element with multiple selectors
@@ -37,8 +38,8 @@ export async function trySelectors(
         continue
       }
 
-      console.debug(
-        `✓ Found element with primary selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
+      log.debug(
+        `Found element with primary selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
       )
       return {
         value: locator,
@@ -59,8 +60,8 @@ export async function trySelectors(
           continue
         }
 
-        console.debug(
-          `⚠ Using fallback selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
+        log.debug(
+          `Using fallback selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
         )
         return {
           value: locator,
@@ -71,7 +72,7 @@ export async function trySelectors(
     }
   }
 
-  console.debug(`✗ No selector found in group`)
+  log.debug(`No selector found in group`)
   return { value: null, usedSelector: '', usedFallback: false }
 }
 
@@ -140,8 +141,8 @@ export async function trySelectorsForAll(
     const locators = await page.locator(config.selector).all()
 
     if (locators.length >= minCount) {
-      console.debug(
-        `✓ Found ${locators.length} elements with primary selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
+      log.debug(
+        `Found ${locators.length} elements with primary selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
       )
       return {
         value: locators,
@@ -157,8 +158,8 @@ export async function trySelectorsForAll(
       const locators = await page.locator(config.selector).all()
 
       if (locators.length >= minCount) {
-        console.debug(
-          `⚠ Found ${locators.length} elements with fallback selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
+        log.debug(
+          `Found ${locators.length} elements with fallback selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
         )
         return {
           value: locators,
@@ -169,7 +170,7 @@ export async function trySelectorsForAll(
     }
   }
 
-  console.debug(`✗ No selector found matching ${minCount}+ elements`)
+  log.debug(`No selector found matching ${minCount}+ elements`)
   return { value: [], usedSelector: '', usedFallback: false }
 }
 

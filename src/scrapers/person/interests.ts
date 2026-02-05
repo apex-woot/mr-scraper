@@ -44,6 +44,9 @@ export async function getInterests(
               .first()
             if ((await tabpanel.count()) > 0) {
               const listItems = await tabpanel.locator('li, listitem').all()
+              log.info(
+                `Got ${listItems.length} interest candidates for ${category}`,
+              )
               const parsed = await parseItems(
                 listItems,
                 async (item, _idx) => await parseInterestItem(item, category),
@@ -80,6 +83,9 @@ export async function getInterests(
             .locator('listitem, li, .pvs-list__paged-list-item')
             .all()
 
+          log.info(
+            `Got ${listItems.length} interest candidates for ${category}`,
+          )
           const parsed = await parseItems(
             listItems,
             async (item, _idx) => await parseInterestItem(item, category),

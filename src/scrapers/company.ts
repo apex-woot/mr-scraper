@@ -2,6 +2,7 @@ import type { Page } from 'playwright'
 import type { ProgressCallback } from '../callbacks'
 import type { CompanyData } from '../models/company'
 import { createCompany } from '../models/company'
+import { log } from '../utils/logger'
 import { checkRateLimit, navigateAndWait } from './utils'
 
 export interface CompanyScraperOptions {
@@ -18,22 +19,21 @@ export async function scrapeCompany(
 ): Promise<CompanyData> {
   const callback = options?.callback
 
-  console.info(`Starting company scraping: ${linkedinUrl}`)
   await callback?.onStart('company', linkedinUrl)
 
   await navigateAndWait(page, linkedinUrl, callback)
-  await callback?.onProgress('Navigated to company page', 10)
+  log.debug('Navigated to company page')
 
   await checkRateLimit(page)
 
   const name = await getName(page)
-  await callback?.onProgress(`Got company name: ${name}`, 20)
+  log.debug(`Got company name: ${name}`)
 
   const aboutUs = await getAbout(page)
-  await callback?.onProgress('Got about section', 30)
+  log.debug('Got about section')
 
   const overview = await getOverview(page)
-  await callback?.onProgress('Got overview details', 50)
+  log.debug('Got overview details')
 
   const company = createCompany({
     linkedinUrl,
@@ -42,10 +42,9 @@ export async function scrapeCompany(
     ...overview,
   } as CompanyData)
 
-  await callback?.onProgress('Scraping complete', 100)
+  log.debug('Scraping complete')
   await callback?.onComplete('company', company)
 
-  console.info(`Successfully scraped company: ${name}`)
   return company
 }
 
@@ -55,7 +54,7 @@ async function getName(page: Page): Promise<string> {
     const name = await nameElem.innerText()
     return name.trim() || 'Unknown Company'
   } catch (e) {
-    console.warn(`Error getting company name: ${e}`)
+    log.warning(`Error getting company name: ${e}`)
     return 'Unknown Company'
   }
 }
@@ -77,7 +76,7 @@ async function getAbout(page: Page): Promise<string | null> {
 
     return null
   } catch (e) {
-    console.debug(`Error getting about section: ${e}`)
+    log.debug(`Error getting about section: ${e}`)
     return null
   }
 }
@@ -146,7 +145,7 @@ async function getOverview(page: Page): Promise<Partial<CompanyData>> {
         }
       }
     } catch (e) {
-      console.debug(`Error finding website: ${e}`)
+      log.debug(`Error finding website: ${e}`)
     }
 
     if (Object.keys(overview).length === 0) {
@@ -175,7 +174,7 @@ async function getOverview(page: Page): Promise<Partial<CompanyData>> {
       }
     }
   } catch (e) {
-    console.debug(`Error getting company overview: ${e}`)
+    log.debug(`Error getting company overview: ${e}`)
   }
 
   return overview

@@ -1,5 +1,6 @@
 import type { Page } from 'playwright'
 import { ElementNotFoundError, RateLimitError } from './exceptions'
+import { log } from './utils/logger'
 
 export async function retryAsync<T>(
   fn: () => Promise<T>,
@@ -22,7 +23,7 @@ export async function retryAsync<T>(
 
       if (shouldRetry && attempt < maxAttempts - 1) {
         const waitTime = backoff ** attempt
-        console.warn(
+        log.warning(
           `Attempt ${attempt + 1}/${maxAttempts} failed: ${e.message}. ` +
             `Retrying in ${waitTime}s...`,
         )
@@ -130,7 +131,7 @@ export async function extractTextSafe(
     const text = await element.textContent({ timeout })
     return text ? text.trim() : defaultValue
   } catch {
-    console.debug(
+    log.debug(
       `Element not found: ${selector}, returning default: ${defaultValue}`,
     )
     return defaultValue
@@ -252,13 +253,13 @@ export async function scrollToBottom(
     const heightDidNotChange =
       newStats.scrollHeight === scrollStats.scrollHeight
 
-    console.info(
+    log.info(
       `Scroll ${i + 1}/${cappedMaxScrolls}: Position=${Math.round(newStats.scrollTop)}, Total Height=${newStats.scrollHeight}`,
     )
 
     if (heightDidNotChange) {
       stableCount++
-      console.debug(
+      log.debug(
         `Height stable (${newStats.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`,
       )
     } else {
@@ -266,7 +267,7 @@ export async function scrollToBottom(
     }
 
     if (stableCount >= stabilityThreshold) {
-      console.info(
+      log.info(
         `Reached end of page (height stable for ${stabilityThreshold} checks).`,
       )
       break
@@ -304,7 +305,7 @@ export async function clickSeeMoreButtons(
   }
 
   if (clicked > 0) {
-    console.debug(`Clicked ${clicked} 'see more' buttons`)
+    log.debug(`Clicked ${clicked} 'see more' buttons`)
   }
 
   return clicked
@@ -321,7 +322,7 @@ export async function handleModalClose(page: Page): Promise<boolean> {
     if (await closeButton.isVisible({ timeout: 1000 })) {
       await closeButton.click()
       await new Promise((resolve) => setTimeout(resolve, 500))
-      console.debug('Closed modal')
+      log.debug('Closed modal')
       return true
     }
   } catch {}

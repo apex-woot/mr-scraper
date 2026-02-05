@@ -1,7 +1,7 @@
 import type { Locator, Page } from 'playwright'
-import type { Education } from '../../models'
 import { SCRAPING_CONSTANTS } from '../../config/constants'
 import { EXPERIENCE_ITEM_SELECTORS } from '../../config/selectors'
+import type { Education } from '../../models'
 import { log } from '../../utils/logger'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
@@ -56,6 +56,7 @@ export async function getEducations(
         0,
       )
 
+      log.info(`Got ${itemsResult.value.length} educations`)
       log.debug(
         `Found ${itemsResult.value.length} education items using: ${itemsResult.usedSelector}`,
       )

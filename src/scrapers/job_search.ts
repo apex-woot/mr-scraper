@@ -1,6 +1,7 @@
 import type { Page } from 'playwright'
 import { z } from 'zod'
 import type { ProgressCallback } from '../callbacks'
+import { log } from '../utils/logger'
 import { navigateAndWait, scrollPageToBottom, waitAndFocus } from './utils'
 
 export const JobSearchParamsSchema = z.object({
@@ -26,34 +27,29 @@ export async function searchJobs(
   const { keywords, location, limit } = JobSearchParamsSchema.parse(params)
   const callback = options?.callback
 
-  console.info(
-    `Starting job search: keywords='${keywords || ''}', location='${location || ''}'`,
-  )
-
   const searchUrl = buildSearchUrl(keywords, location)
   await callback?.onStart('JobSearch', searchUrl)
 
   await navigateAndWait(page, searchUrl, callback)
-  await callback?.onProgress('Navigated to search results', 20)
+  log.debug('Navigated to search results')
 
   try {
     await page.waitForSelector('a[href*="/jobs/view/"]', { timeout: 10000 })
   } catch {
-    console.warn('No job listings found on page')
+    log.warning('No job listings found on page')
     return []
   }
 
   await waitAndFocus(page, 1)
   await scrollPageToBottom(page, 1, 3)
-  await callback?.onProgress('Loaded job listings', 50)
+  log.debug('Loaded job listings')
 
   const jobUrls = await extractJobUrls(page, limit)
-  await callback?.onProgress(`Found ${jobUrls.length} job URLs`, 90)
+  log.debug(`Found ${jobUrls.length} job URLs`)
 
-  await callback?.onProgress('Search complete', 100)
+  log.debug('Search complete')
   await callback?.onComplete('JobSearch', jobUrls)
 
-  console.info(`Job search complete: found ${jobUrls.length} jobs`)
   return jobUrls
 }
 
@@ -91,11 +87,11 @@ async function extractJobUrls(page: Page, limit: number): Promise<string[]> {
           }
         }
       } catch (e) {
-        console.debug(`Error extracting job URL: ${e}`)
+        log.debug(`Error extracting job URL: ${e}`)
       }
     }
   } catch (e) {
-    console.warn(`Error extracting job URLs: ${e}`)
+    log.warning(`Error extracting job URLs: ${e}`)
   }
 
   return jobUrls

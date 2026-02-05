@@ -3,6 +3,7 @@ import type { ProgressCallback } from '../../callbacks'
 import { ScrapingError } from '../../exceptions'
 import type { PersonData } from '../../models'
 import { createPerson } from '../../models'
+import { log } from '../../utils/logger'
 import {
   ensureLoggedIn,
   navigateAndWait,
@@ -54,7 +55,7 @@ export async function scrapePerson(
 
   try {
     await navigateAndWait(page, linkedinUrl, callback)
-    await callback?.onProgress('Navigated to profile', 10)
+    log.debug('Navigated to profile')
 
     await ensureLoggedIn(page)
 
@@ -62,13 +63,13 @@ export async function scrapePerson(
     await waitAndFocus(page, 1)
 
     const { name, location } = await getNameAndLocation(page)
-    await callback?.onProgress(`Got name: ${name}`, 20)
+    log.debug(`Got name: ${name}`)
 
     const openToWork = await checkOpenToWork(page)
 
     const about = sections.about ? await getAbout(page) : null
     if (sections.about) {
-      await callback?.onProgress('Got about section', 30)
+      log.debug('Got about section')
     }
 
     if (sections.experiences || sections.educations) {
@@ -80,43 +81,40 @@ export async function scrapePerson(
       ? await getExperiences(page, linkedinUrl)
       : []
     if (sections.experiences) {
-      await callback?.onProgress(`Got ${experiences.length} experiences`, 60)
+      log.debug(`Got ${experiences.length} experiences`)
     }
 
     const educations = sections.educations
       ? await getEducations(page, linkedinUrl)
       : []
     if (sections.educations) {
-      await callback?.onProgress(`Got ${educations.length} educations`, 50)
+      log.debug(`Got ${educations.length} educations`)
     }
 
     const patents = sections.patents ? await getPatents(page, linkedinUrl) : []
     if (sections.patents) {
-      await callback?.onProgress(`Got ${patents.length} patents`, 55)
+      log.debug(`Got ${patents.length} patents`)
     }
 
     const interests = sections.interests
       ? await getInterests(page, linkedinUrl)
       : []
     if (sections.interests) {
-      await callback?.onProgress(`Got ${interests.length} interests`, 65)
+      log.debug(`Got ${interests.length} interests`)
     }
 
     const accomplishments = sections.accomplishments
       ? await getAccomplishments(page, linkedinUrl)
       : []
     if (sections.accomplishments) {
-      await callback?.onProgress(
-        `Got ${accomplishments.length} accomplishments`,
-        85,
-      )
+      log.debug(`Got ${accomplishments.length} accomplishments`)
     }
 
     const contacts = sections.contacts
       ? await getContacts(page, linkedinUrl)
       : []
     if (sections.contacts) {
-      await callback?.onProgress(`Got ${contacts.length} contacts`, 95)
+      log.debug(`Got ${contacts.length} contacts`)
     }
 
     const person = createPerson({
@@ -133,7 +131,7 @@ export async function scrapePerson(
       contacts,
     } as PersonData)
 
-    await callback?.onProgress('Scraping complete', 100)
+    log.debug('Scraping complete')
     await callback?.onComplete('person', person)
 
     return person

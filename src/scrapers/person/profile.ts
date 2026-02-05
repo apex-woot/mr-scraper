@@ -5,6 +5,7 @@ import {
   NAME_SELECTORS,
   TEST_ID_SELECTORS,
 } from '../../config/selectors'
+import { log } from '../../utils/logger'
 import { trySelectors, trySelectorsForText } from '../../utils/selector-utils'
 import { getAttributeSafe } from '../utils'
 
@@ -25,13 +26,13 @@ export async function getNameAndLocation(
     )
 
     if (nameResult.usedFallback) {
-      console.warn(
-        `⚠ Name found using fallback selector: ${nameResult.usedSelector}`,
+      log.warning(
+        `Name found using fallback selector: ${nameResult.usedSelector}`,
       )
     }
     if (locationResult.usedFallback) {
-      console.warn(
-        `⚠ Location found using fallback selector: ${locationResult.usedSelector}`,
+      log.warning(
+        `Location found using fallback selector: ${locationResult.usedSelector}`,
       )
     }
 
@@ -40,7 +41,7 @@ export async function getNameAndLocation(
       location: locationResult.value || null,
     }
   } catch (e) {
-    console.warn(`Error getting name/location: ${e}`)
+    log.warning(`Error getting name/location: ${e}`)
     return { name: 'Unknown', location: null }
   }
 }
@@ -76,9 +77,7 @@ export async function getAbout(page: Page): Promise<string | null> {
     )
 
     if (expandableTextResult.value) {
-      console.debug(
-        `✓ Found about text using: ${expandableTextResult.usedSelector}`,
-      )
+      log.debug(`Found about text using: ${expandableTextResult.usedSelector}`)
       return expandableTextResult.value
     }
 
@@ -105,7 +104,7 @@ export async function getAbout(page: Page): Promise<string | null> {
 
     return null
   } catch (e) {
-    console.debug(`Error getting about section: ${e}`)
+    log.debug(`Error getting about section: ${e}`)
     return null
   }
 }

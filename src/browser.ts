@@ -4,6 +4,7 @@ import type { Browser, BrowserContext, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { z } from 'zod'
 import { NetworkError } from './exceptions'
+import { log } from './utils/logger'
 
 const ViewportSchema = z.object({
   width: z.number(),
@@ -39,7 +40,7 @@ export class BrowserManager {
         ...this._options.launchOptions,
       })
 
-      console.info(`Browser launched (headless=${this._options.headless})`)
+      log.info(`Browser launched (headless=${this._options.headless})`)
 
       this._context = await this._browser.newContext({
         viewport: this._options.viewport,
@@ -48,7 +49,7 @@ export class BrowserManager {
 
       this._page = await this._context.newPage()
 
-      console.info('Browser context and page created')
+      log.info('Browser context and page created')
     } catch (e) {
       await this.close()
       throw new NetworkError(`Failed to start browser: ${e}`)
@@ -66,9 +67,9 @@ export class BrowserManager {
       if (this._browser) await this._browser.close()
       this._browser = null
 
-      console.info('Browser closed')
+      log.info('Browser closed')
     } catch (e) {
-      console.error(`Error closing browser: ${e}`)
+      log.error(`Error closing browser: ${e}`)
     }
   }
 
@@ -102,7 +103,7 @@ export class BrowserManager {
     await fs.mkdir(dir, { recursive: true })
     await fs.writeFile(filepath, JSON.stringify(storageState, null, 2))
 
-    console.info(`Session saved to ${filepath}`)
+    log.info(`Session saved to ${filepath}`)
   }
 
   async loadSession(filepath: string): Promise<void> {
@@ -125,7 +126,7 @@ export class BrowserManager {
     this._page = await this._context.newPage()
     this._isAuthenticated = true
 
-    console.info(`Session loaded from ${filepath}`)
+    log.info(`Session loaded from ${filepath}`)
   }
 
   async setCookie(
@@ -135,7 +136,7 @@ export class BrowserManager {
   ): Promise<void> {
     if (!this._context) throw new Error('No browser context')
     await this._context.addCookies([{ name, value, domain, path: '/' }])
-    console.debug(`Cookie set: ${name}`)
+    log.debug(`Cookie set: ${name}`)
   }
 
   get isAuthenticated(): boolean {
