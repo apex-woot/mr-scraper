@@ -54,12 +54,11 @@ export async function detectRateLimit(page: Page): Promise<void> {
     const captchaCount = await page
       .locator('iframe[title*="captcha" i], iframe[src*="captcha" i]')
       .count()
-    if (captchaCount > 0) {
+    if (captchaCount > 0)
       throw new RateLimitError(
         'CAPTCHA challenge detected. Manual intervention required.',
         3600,
       )
-    }
   } catch {}
 
   try {

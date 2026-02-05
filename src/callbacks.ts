@@ -41,19 +41,37 @@ export function createConsoleCallback(
         const barLength = 30
         const filled = Math.floor((barLength * percent) / 100)
         const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled)
-        console.log(`[${bar}] ${percent}% - ${message}`)
+        const output = `\r[${bar}] ${percent}% - ${message}`
+
+        if (process.stdout.isTTY) {
+          process.stdout.write(output)
+        } else {
+          console.log(output.trim())
+        }
       }
     },
     onComplete: (type: string, _data: any) => {
+      if (process.stdout.isTTY) {
+        process.stdout.write('\r\x1b[K')
+      }
       console.info(`Completed ${type} scraping successfully`)
     },
     onInfo: (message: string) => {
+      if (process.stdout.isTTY) {
+        process.stdout.write('\r\x1b[K')
+      }
       console.info(`[Info] ${message}`)
     },
     onWarning: (message: string) => {
+      if (process.stdout.isTTY) {
+        process.stdout.write('\r\x1b[K')
+      }
       console.warn(`[Warning] ${message}`)
     },
     onError: (message: string, error?: Error) => {
+      if (process.stdout.isTTY) {
+        process.stdout.write('\r\x1b[K')
+      }
       console.error(`Error: ${message}`, error?.message ?? '')
     },
   }
