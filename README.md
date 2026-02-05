@@ -1,26 +1,16 @@
-# LinkedIn Scraper (TypeScript)
+# @apexwoot/mr-scraper
 
-> [!WARNING]
-> This project is a TypeScript port of the original [linkedin_scraper](https://github.com/joeyism/linkedin_scraper) by [joeyism](https://github.com/joeyism) using AI. While I will be maintaining and improving this project mostly by myself, I will continue to utilize AI to assist in development and updates.
+[![npm version](https://img.shields.io/npm/v/@apexwoot/mr-scraper.svg)](https://www.npmjs.com/package/@apexwoot/mr-scraper)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
-A high-performance LinkedIn scraper ported from Python to **Bun + TypeScript**, utilizing **Playwright** for browser automation and **Zod** for data validation.
+A high-performance LinkedIn scraper for **Bun + TypeScript**. Built with **Playwright** and **Zod** for robust automation and type-safe data extraction.
 
-Kudos to the original author for the excellent work on the Python version.
-
-## Features
-
-- **Person Profile Scraper:** Extract full profile details, including experiences, education, interests, and accomplishments.
-- **Company Scraper:** Scrape company details, overview, and website info.
-- **Job Search Scraper:** Search for jobs and extract posting URLs.
-- **Job Scraper:** Detailed job posting extraction.
-- **Company Posts Scraper:** Extract recent posts from any company page.
-- **Session Management:** Save and load cookies/storage state to bypass frequent logins.
-- **Progress Tracking:** Real-time feedback via customizable callbacks (Console, JSON, Multi).
-
-## Installation
+## Install
 
 ```bash
-bun install
+bun add @apexwoot/mr-scraper
+bun x playwright install chromium # Required for first-time use
 ```
 
 ## Quick Start
@@ -28,43 +18,68 @@ bun install
 ```typescript
 import { BrowserManager, PersonScraper, ConsoleCallback } from "@apexwoot/mr-scraper";
 
-const browser = new BrowserManager({ headless: false });
+const browser = new BrowserManager({ headless: true });
 await browser.start();
-
-// Optional: Login
-// await loginWithCredentials(browser.page, { email: "...", password: "..." });
 
 const scraper = new PersonScraper({ 
   page: browser.page, 
   callback: new ConsoleCallback() 
 });
 
-const profile = await scraper.scrape("https://www.linkedin.com/in/vitalii-kohut-7081161aa/");
+const profile = await scraper.scrape("https://www.linkedin.com/in/some-profile/");
 console.log(profile.data.name);
 
 await browser.close();
 ```
 
+## Features
+
+- **Data Extraction:** Profiles, Companies, Job Postings, and Company Posts.
+- **Type Safety:** Full TypeScript support with Zod-validated schemas.
+- **Session Management:** Persist authentication via `storageState` to bypass logins.
+- **Extensible:** Custom callbacks for real-time progress tracking (JSON, Multi, Console).
+
+### 🚀 Improved Robustness
+| Feature | Python Version | This Version |
+| :--- | :---: | :---: |
+| **Experience** | Basic | **Robust & Detailed** |
+| **Patents** | Limited | **Full Extraction** |
+| **Data Validation** | Pydantic | **Strict Zod Schemas** |
+| **Concurrency** | Threading | **Modern Async/Await** |
+
+## Session Persistence
+
+To avoid repeated logins and bot detection, save and reuse your session state:
+
+```typescript
+// Save session
+await loginWithCredentials(page, { email, password });
+await browser.context.storageState({ path: 'state.json' });
+
+// Reuse session
+const browser = new BrowserManager({ storageState: 'state.json' });
+await browser.start();
+```
+
 ## Development
 
-### Run Tests
-
 ```bash
-bun test
+bun install    # Setup
+bun test       # Run tests
+run build      # Build dist
 ```
 
-### Type Check
+## Roadmap / TODO
+- [x] High-performance Bun + Playwright core
+- [x] Robust Experience & Patent extraction
+- [ ] Robust extraction of other sections (Education, Publications, Skills, Interests, etc.)
+- [ ] Proxy support integration
+- [ ] LinkedIn Messaging scraping support
+- [ ] Recruiter-specific data points
+- [ ] Automated CAPTCHA solving hooks
 
-```bash
-bun x tsc --noEmit
-```
+---
 
-## Releasing
+*Disclaimer: This tool is for educational purposes only. Users are responsible for complying with LinkedIn's Terms of Service.*
 
-This project uses **Bun's native publishing** for versioning and tagging.
-
-## Standards
-
-- **Strict Typing:** All data models validated via Zod.
-- **Modern Async:** Full `async/await` implementation.
-- **Playwright:** Robust browser automation replacing Selenium.
+<small>TypeScript port of [linkedin_scraper](https://github.com/joeyism/linkedin_scraper) by [joeyism](https://github.com/joeyism).</small>
