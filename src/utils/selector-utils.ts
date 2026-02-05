@@ -1,5 +1,5 @@
 import type { Locator, Page } from 'playwright'
-import type { SelectorConfig, SelectorGroup } from '../config/selectors'
+import type { SelectorGroup } from '../config/selectors'
 
 /**
  * Result from attempting to find an element with multiple selectors

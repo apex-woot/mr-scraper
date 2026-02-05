@@ -1,4 +1,5 @@
 import type { Locator, Page } from 'playwright'
+import type { Patent } from '../../models/person'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,

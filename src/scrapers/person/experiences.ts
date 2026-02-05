@@ -1,5 +1,5 @@
 import type { Locator, Page } from 'playwright'
-import type { Experience } from '../../models'
+import type { Experience, Position } from '../../models/person'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
