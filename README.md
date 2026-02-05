@@ -61,7 +61,7 @@ bun x tsc --noEmit
 
 ## Releasing
 
-This project uses `release-it` for versioning and automated changelog generation based on [Conventional Commits](https://www.conventionalcommits.org/).
+This project uses **Bun's native publishing** for versioning and tagging.
 
 ## Standards
 

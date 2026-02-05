@@ -35,5 +35,5 @@ jobs:
       - name: Build package
         run: bun run build
 
-      - name: Publish to npm with OIDC
-        run: npm publish --provenance --access public
+      - name: Publish to npm
+        run: bun publish --provenance --access public
