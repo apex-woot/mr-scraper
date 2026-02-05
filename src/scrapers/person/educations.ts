@@ -1,5 +1,8 @@
 import type { Locator, Page } from 'playwright'
 import type { Education } from '../../models'
+import { SCRAPING_CONSTANTS } from '../../config/constants'
+import { EXPERIENCE_ITEM_SELECTORS } from '../../config/selectors'
+import { log } from '../../utils/logger'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
@@ -7,6 +10,7 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
+import { deduplicateItems, parseItems } from './common-patterns'
 import { extractUniqueTextsFromElement, parseDateRange } from './utils'
 
 export async function getEducations(
@@ -27,15 +31,10 @@ export async function getEducations(
 
       if ((await educationSection.count()) > 0) {
         const items = await educationSection.locator('ul > li, ol > li').all()
-
-        for (const item of items) {
-          try {
-            const edu = await parseMainPageEducation(item)
-            if (edu) educations.push(edu)
-          } catch (e) {
-            console.debug(`Error parsing education from main page: ${e}`)
-          }
-        }
+        const parsed = await parseItems(items, parseMainPageEducation, {
+          itemType: 'education from main page',
+        })
+        educations.push(...parsed)
       }
     }
 
@@ -43,48 +42,37 @@ export async function getEducations(
       const eduUrl = `${baseUrl.replace(/\/$/, '')}/details/education/`
       await navigateAndWait(page, eduUrl)
       await page.waitForSelector('main', { timeout: 10000 })
-      await waitAndFocus(page, 2)
+      await waitAndFocus(page, SCRAPING_CONSTANTS.EDUCATION_FOCUS_WAIT)
       await scrollPageToHalf(page)
-      await scrollPageToBottom(page, 0.5, 5)
-
-      // Use selector system to find education items (same structure as experience)
-      const itemsResult = await trySelectorsForAll(
+      await scrollPageToBottom(
         page,
-        {
-          primary: [
-            {
-              selector: '[componentkey^="entity-collection-item"]',
-              description: 'Modern education items by componentkey',
-            },
-          ],
-          fallback: [
-            {
-              selector: '.pvs-list__container .pvs-list__paged-list-item',
-              description: 'Old list items',
-            },
-          ],
-        },
-        0, // Allow 0 items (profile might have no education)
+        SCRAPING_CONSTANTS.EDUCATION_SCROLL_PAUSE,
+        SCRAPING_CONSTANTS.EDUCATION_MAX_SCROLLS,
       )
 
-      console.debug(
+      const itemsResult = await trySelectorsForAll(
+        page,
+        EXPERIENCE_ITEM_SELECTORS,
+        0,
+      )
+
+      log.debug(
         `Found ${itemsResult.value.length} education items using: ${itemsResult.usedSelector}`,
       )
 
-      for (const item of itemsResult.value) {
-        try {
-          const edu = await parseEducationItem(item)
-          if (edu) educations.push(edu)
-        } catch (e) {
-          console.debug(`Error parsing education item: ${e}`)
-        }
-      }
+      const parsed = await parseItems(itemsResult.value, parseEducationItem, {
+        itemType: 'education item',
+      })
+      educations.push(...parsed)
     }
   } catch (e) {
-    console.warn(`Error getting educations: ${e}`)
+    log.warning(`Error getting educations: ${e}`)
   }
 
-  return educations
+  return deduplicateItems(
+    educations,
+    (edu) => `${edu.institutionName}|${edu.degree}|${edu.fromDate}`,
+  )
 }
 
 async function parseMainPageEducation(
@@ -126,7 +114,7 @@ async function parseMainPageEducation(
       toDate: toDate ?? undefined,
     }
   } catch (e) {
-    console.debug(`Error parsing main page education: ${e}`)
+    log.debug(`Error parsing main page education: ${e}`)
     return null
   }
 }
@@ -249,7 +237,7 @@ async function parseEducationItem(item: Locator): Promise<Education | null> {
       description: description.trim() || undefined,
     }
   } catch (e) {
-    console.debug(`Error parsing education: ${e}`)
+    log.debug(`Error parsing education: ${e}`)
     return null
   }
 }
