@@ -28,16 +28,16 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/apexwoot/mr-linkedin.git"
+    "url": "git+https://github.com/apex-woot/mr-linkedin.git"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/apexwoot/mr-linkedin/issues"
+    "url": "https://github.com/apex-woot/mr-linkedin/issues"
   },
-  "homepage": "https://github.com/apexwoot/mr-linkedin#readme",
+  "homepage": "https://github.com/apex-woot/mr-linkedin#readme",
   "author": "apexwoot",
   "license": "GPL-3.0",
   "engines": {

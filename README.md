@@ -26,7 +26,7 @@ bun install
 ## Quick Start
 
 ```typescript
-import { BrowserManager, PersonScraper, ConsoleCallback } from "mr-scraper";
+import { BrowserManager, PersonScraper, ConsoleCallback } from "@apexwoot/mr-scraper";
 
 const browser = new BrowserManager({ headless: false });
 await browser.start();
@@ -58,6 +58,10 @@ bun test
 ```bash
 bun x tsc --noEmit
 ```
+
+## Releasing
+
+This project uses `release-it` for versioning and automated changelog generation based on [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## Standards
 
