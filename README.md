@@ -15,22 +15,28 @@ bun x playwright install chromium # Required for first-time use
 
 ## Quick Start
 
+You can authenticate using either your **credentials** or the **`li_at` session cookie**.
+
 ```typescript
-import { BrowserManager, PersonScraper, ConsoleCallback } from "@apexwoot/mr-scraper";
+import { BrowserManager, PersonScraper, loginWithCredentials } from "@apexwoot/mr-scraper";
 
 const browser = new BrowserManager({ headless: true });
 await browser.start();
 
-const scraper = new PersonScraper({ 
-  page: browser.page, 
-  callback: new ConsoleCallback() 
-});
+// Option A: Login with li_at cookie (Recommended)
+await browser.setCookie('li_at', process.env.LINKEDIN_LI_AT_COOKIE);
 
+// Option B: Login with credentials
+// await loginWithCredentials(browser.page, { email: '...', password: '...' });
+
+const scraper = new PersonScraper({ page: browser.page });
 const profile = await scraper.scrape("https://www.linkedin.com/in/some-profile/");
-console.log(profile.data.name);
 
+console.log(profile.data.name);
 await browser.close();
 ```
+
+> See `.env.example` for the list of required environment variables.
 
 ## Features
 
