@@ -31,7 +31,6 @@
     "url": "git+https://github.com/apex-woot/mr-linkedin.git"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org",
     "access": "public"
   },
   "bugs": {
