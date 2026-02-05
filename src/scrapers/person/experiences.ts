@@ -1,5 +1,8 @@
 import type { Locator, Page } from 'playwright'
+import { SCRAPING_CONSTANTS } from '../../config/constants'
+import { EXPERIENCE_ITEM_SELECTORS } from '../../config/selectors'
 import type { Experience, Position } from '../../models/person'
+import { log } from '../../utils/logger'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
@@ -7,7 +10,13 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
-import { parseDateRange } from './utils'
+import { deduplicateItems, parseItems } from './common-patterns'
+import {
+  isDateLine,
+  isDescriptionLike,
+  isLocationLike,
+  parseDateRange,
+} from './utils'
 
 export async function getExperiences(
   page: Page,
@@ -16,94 +25,54 @@ export async function getExperiences(
   const experiences: Experience[] = []
 
   try {
-    // Always navigate to details page for now to ensure we get all experiences
-    // TODO: Optimize to only navigate if "Show more" button exists
+    // Navigate to details page to ensure all experiences are loaded.
+    // Main profile page often truncates experience list with "Show more" button.
     const expUrl = `${baseUrl.replace(/\/$/, '')}/details/experience/`
-    console.debug('Navigating to experience details page')
+    log.debug('Navigating to experience details page')
     await navigateAndWait(page, expUrl)
     await page.waitForSelector('main', { timeout: 10000 })
-    await waitAndFocus(page, 1.5)
+    await waitAndFocus(page, SCRAPING_CONSTANTS.EXPERIENCE_FOCUS_WAIT)
     await scrollPageToHalf(page)
-    await scrollPageToBottom(page, 0.5, 5)
-
-    // Use selector system to find experience items
-    // Top-level experiences are div elements with componentkey="entity-collection-item-*"
-    const itemsResult = await trySelectorsForAll(
+    await scrollPageToBottom(
       page,
-      {
-        primary: [
-          {
-            selector: '[componentkey^="entity-collection-item"]',
-            description: 'Modern experience items by componentkey',
-          },
-        ],
-        fallback: [
-          {
-            selector: '.pvs-list__container .pvs-list__paged-list-item',
-            description: 'Old list items',
-          },
-        ],
-      },
-      0, // Allow 0 items (profile might have no experience)
+      SCRAPING_CONSTANTS.EXPERIENCE_SCROLL_PAUSE,
+      SCRAPING_CONSTANTS.EXPERIENCE_MAX_SCROLLS,
     )
 
-    console.debug(
+    const itemsResult = await trySelectorsForAll(
+      page,
+      EXPERIENCE_ITEM_SELECTORS,
+      0,
+    )
+
+    log.debug(
       `Found ${itemsResult.value.length} experience items using: ${itemsResult.usedSelector}`,
     )
 
-    let processedCount = 0
-    let skippedCount = 0
-
-    for (let idx = 0; idx < itemsResult.value.length; idx++) {
-      const item = itemsResult.value[idx]
-      if (!item) continue
-      console.debug(
-        `\n--- Processing item ${idx + 1}/${itemsResult.value.length} ---`,
-      )
-
-      // Debug: show first link href to identify the item
-      const firstLink = item.locator('a').first()
-      if ((await firstLink.count()) > 0) {
-        const href = await firstLink.getAttribute('href')
-        console.debug(`Item link: ${href?.substring(0, 60)}...`)
-      }
-
-      try {
-        // Check if this <li> has an ancestor <li> (meaning it's nested)
+    const parsed = await parseItems(itemsResult.value, parseExperienceItem, {
+      itemType: 'experience',
+      logSkipped: true,
+      shouldSkip: async (item) => {
+        // Skip nested <li> items (will be parsed by parent)
         const ancestorLi = item.locator('xpath=ancestor::li')
-        const hasAncestorLi = (await ancestorLi.count()) > 0
+        return (await ancestorLi.count()) > 0
+      },
+      onSuccess: (result, idx) => {
+        log.success(
+          `Parsed experience at ${result.company} with ${result.positions.length} positions (item ${idx + 1})`,
+        )
+      },
+    })
 
-        if (hasAncestorLi) {
-          console.debug(
-            '⊳ Skipping nested <li> item (will be parsed by parent)',
-          )
-          skippedCount++
-          continue
-        }
-
-        processedCount++
-        const result = await parseExperienceItem(item)
-        if (result) {
-          console.debug(
-            `✓ Parsed experience at ${result.company} with ${result.positions.length} positions`,
-          )
-          experiences.push(result)
-        } else {
-          console.debug(`✗ Failed to parse experience item`)
-        }
-      } catch (e) {
-        console.debug(`Error parsing experience item: ${e}`)
-      }
-    }
-
-    console.debug(
-      `\n--- Summary: Processed ${processedCount}, Skipped ${skippedCount}, Total parsed: ${experiences.length} ---`,
-    )
+    experiences.push(...parsed)
   } catch (e) {
-    console.warn(`Error getting experiences: ${e}`)
+    log.warning(`Error getting experiences: ${e}`)
   }
 
-  return experiences
+  return deduplicateItems(
+    experiences,
+    (exp) => `${exp.company}|${exp.positions[0]?.title}`,
+  )
 }
 
 interface ParsedLinks {
@@ -201,48 +170,28 @@ async function extractAdditionalFields(
   return { workTimes, location, description }
 }
 
-function isDateLine(text: string): boolean {
-  return (
-    (text.includes(' - ') || text.includes('Present')) &&
-    /\d{4}|\d+\s+(yr|yrs|mo|mos)/.test(text)
-  )
-}
-
-function isLocationLike(text: string): boolean {
-  return (
-    text.length < 100 &&
-    !text.includes('·') &&
-    !/\d/.test(text) &&
-    text.split(/\s+/).length <= 6
-  )
-}
-
-function isDescriptionLike(text: string): boolean {
-  return text.split(/\s+/).length > 6 || text.length > 100
-}
-
 async function parseExperienceItem(item: Locator): Promise<Experience | null> {
   try {
     // 1. Extract links and metadata
     const links = await extractLinks(item)
     if (!links) {
-      console.debug('No links found, trying simplified fallback parser')
+      log.debug('No links found, trying simplified fallback parser')
       return await parseExperienceItemSimpleFallback(item)
     }
 
     const metadata = await getItemMetadata(item, links.contentLink)
     if (!metadata) {
-      console.debug('No metadata found, trying simplified fallback parser')
+      log.debug('No metadata found, trying simplified fallback parser')
       return await parseExperienceItemSimpleFallback(item)
     }
 
-    console.debug(`First <p>: "${metadata.firstP.substring(0, 50)}"`)
-    console.debug(`Second <p>: "${metadata.secondP.substring(0, 50)}"`)
-    console.debug(`Has nested UL: ${metadata.hasNestedUl}`)
+    log.debug(`First <p>: "${metadata.firstP.substring(0, 50)}"`)
+    log.debug(`Second <p>: "${metadata.secondP.substring(0, 50)}"`)
+    log.debug(`Has nested UL: ${metadata.hasNestedUl}`)
 
     // 2. Detect pattern: multiple positions vs single position
     if (metadata.hasNestedUl) {
-      console.debug('Pattern 2: Multiple positions')
+      log.debug('Pattern 2: Multiple positions')
       return await parseMultiplePositions(
         item,
         links.companyUrl,
@@ -251,10 +200,10 @@ async function parseExperienceItem(item: Locator): Promise<Experience | null> {
     }
 
     // 3. Parse single position (unified Pattern 1/3)
-    console.debug('Pattern 1/3: Single position')
+    log.debug('Pattern 1/3: Single position')
     return await parseSinglePosition(item, links.companyUrl, metadata)
   } catch (e) {
-    console.debug(`Error parsing experience: ${e}`)
+    log.debug(`Error parsing experience: ${e}`)
     return null
   }
 }
@@ -329,7 +278,7 @@ async function parseExperienceItemSimpleFallback(
   item: Locator,
 ): Promise<Experience | null> {
   try {
-    console.debug('Using simplified fallback parser')
+    log.debug('Using simplified fallback parser')
 
     // Collect all paragraph texts
     const pTags = await item.locator('p').all()
@@ -338,7 +287,7 @@ async function parseExperienceItemSimpleFallback(
     ).filter((t): t is string => !!t && t.length < 500)
 
     if (texts.length < 2) {
-      console.debug('Not enough text elements found')
+      log.debug('Not enough text elements found')
       return null
     }
 
@@ -376,7 +325,7 @@ async function parseExperienceItemSimpleFallback(
       ],
     }
   } catch (e) {
-    console.debug(`Error in fallback parser: ${e}`)
+    log.debug(`Error in fallback parser: ${e}`)
     return null
   }
 }
@@ -412,18 +361,14 @@ async function parseNestedExperience(
         let workTimes = ''
         let location = ''
 
-        if (pTags.length >= 1) {
+        if (pTags.length >= 1)
           positionTitle = (await pTags[0]?.textContent())?.trim() ?? ''
-        }
-        if (pTags.length >= 2) {
+        if (pTags.length >= 2)
           employmentType = (await pTags[1]?.textContent())?.trim() ?? ''
-        }
-        if (pTags.length >= 3) {
+        if (pTags.length >= 3)
           workTimes = (await pTags[2]?.textContent())?.trim() ?? ''
-        }
-        if (pTags.length >= 4) {
+        if (pTags.length >= 4)
           location = (await pTags[3]?.textContent())?.trim() ?? ''
-        }
 
         const { fromDate, toDate, duration } = parseDateRange(workTimes, {
           includeDuration: true,
@@ -469,11 +414,11 @@ async function parseNestedExperience(
           description: description || undefined,
         })
       } catch (e) {
-        console.debug(`Error parsing nested position: ${e}`)
+        log.debug(`Error parsing nested position: ${e}`)
       }
     }
   } catch (e) {
-    console.debug(`Error parsing nested experience: ${e}`)
+    log.debug(`Error parsing nested experience: ${e}`)
   }
 
   return positions
