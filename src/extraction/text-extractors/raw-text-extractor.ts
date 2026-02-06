@@ -1,5 +1,4 @@
 import type { Locator } from 'playwright'
-import { SCRAPING_CONSTANTS } from '../../config/constants'
 import { log } from '../../utils/logger'
 import type { ExtractedText, TextExtractor } from './types'
 
@@ -20,7 +19,7 @@ export class RawTextExtractor implements TextExtractor {
       const lines = rawText
         .split('\n')
         .map((line) => line.trim())
-        .filter((line) => line.length > 0 && line.length < SCRAPING_CONSTANTS.MAX_FALLBACK_TEXT_LENGTH)
+        .filter((line) => line.length > 0)
 
       if (lines.length === 0) return null
 

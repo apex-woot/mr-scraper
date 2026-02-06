@@ -45,7 +45,7 @@ async function extractAriaTexts(element: Locator): Promise<string[]> {
     if (text) rawTexts.push(text)
   }
 
-  return deduplicateTexts(rawTexts, 500)
+  return deduplicateTexts(rawTexts)
 }
 
 function computeConfidence(texts: string[], links: ExtractedLink[], subItems: ExtractedText[]): number {

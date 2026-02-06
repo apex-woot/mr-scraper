@@ -1,13 +1,13 @@
 import type { Locator } from 'playwright'
 import type { ExtractedLink, ExtractedText } from './types'
 
-export function deduplicateTexts(texts: string[], maxLength: number = 500): string[] {
+export function deduplicateTexts(texts: string[]): string[] {
   const seen = new Set<string>()
   const deduplicated: string[] = []
 
   for (const rawText of texts) {
     const text = rawText.trim()
-    if (!text || text.length > maxLength || seen.has(text)) continue
+    if (!text || seen.has(text)) continue
 
     let isSubstring = false
     for (const existing of seen) {

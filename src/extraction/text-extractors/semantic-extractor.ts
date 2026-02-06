@@ -47,7 +47,7 @@ async function extractSemanticTexts(element: Locator): Promise<string[]> {
     if (text) rawTexts.push(text)
   }
 
-  let deduped = deduplicateTexts(rawTexts, 500)
+  let deduped = deduplicateTexts(rawTexts)
   if (deduped.length > 0) return deduped
 
   const spans = await element.locator('span').all()
@@ -57,7 +57,7 @@ async function extractSemanticTexts(element: Locator): Promise<string[]> {
     if (text) spanTexts.push(text)
   }
 
-  deduped = deduplicateTexts(spanTexts, 300)
+  deduped = deduplicateTexts(spanTexts)
   return deduped.filter((text) => text.length > 1)
 }
 
