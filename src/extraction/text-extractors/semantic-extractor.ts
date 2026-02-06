@@ -35,20 +35,16 @@ export class SemanticTextExtractor implements TextExtractor {
 async function extractSemanticTexts(element: Locator): Promise<string[]> {
   const rawTexts: string[] = []
 
-  const headings = await element.locator('h1, h2, h3, h4, h5, h6').all()
-  for (const heading of headings) {
-    const text = await heading.textContent()
-    if (text) rawTexts.push(text)
-  }
-
-  const paragraphs = await element.locator('p').all()
-  for (const paragraph of paragraphs) {
-    const text = await paragraph.textContent()
+  const primaryNodes = await element
+    .locator('h1, h2, h3, h4, h5, h6, p, .text-body-medium, .text-body-small')
+    .all()
+  for (const node of primaryNodes) {
+    const text = await node.textContent()
     if (text) rawTexts.push(text)
   }
 
   let deduped = deduplicateTexts(rawTexts)
-  if (deduped.length > 0) return deduped
+  if (deduped.length >= 2) return deduped
 
   const spans = await element.locator('span').all()
   const spanTexts: string[] = []
@@ -57,7 +53,7 @@ async function extractSemanticTexts(element: Locator): Promise<string[]> {
     if (text) spanTexts.push(text)
   }
 
-  deduped = deduplicateTexts(spanTexts)
+  deduped = deduplicateTexts([...rawTexts, ...spanTexts])
   return deduped.filter((text) => text.length > 1)
 }
 
