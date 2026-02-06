@@ -1,175 +1,269 @@
-import type { Page } from 'playwright'
+import type { Locator } from 'playwright'
+import { deduplicateItems } from '../scrapers/person/common-patterns'
 import { log } from '../utils/logger'
 import type {
-  ExtractionStrategy,
-  PipelineDiagnostics,
-  PipelineResult,
-  SectionInterpreter,
-} from './types'
+  PageExtractor,
+  PageExtractorConfig,
+  RawSection,
+  TaggedLocator,
+} from './page-extractors'
+import type { Parser, RawParser } from './parsers'
+import type { ExtractedText, TextExtractor } from './text-extractors'
 
-interface PipelineOptions {
-  /** Minimum confidence to accept a strategy's results (default 0.5) */
-  confidenceThreshold?: number
-  /** Capture raw HTML on failure for self-healing (default false) */
-  captureHtmlOnFailure?: boolean
-  /** CSS selector to scope extraction (e.g. a section container) */
-  containerSelector?: string
+export interface PipelineDiagnostics {
+  sectionName: string
+  textExtractorsAttempted: string[]
+  textExtractorUsed: string | null
+  itemsFound: number
+  itemsParsed: number
+  itemsFailed: number
+  avgConfidence: number
+  durationMs: number
+  capturedHtml?: string
 }
 
-/**
- * Orchestrates extraction by trying strategies in priority order.
- * Stops when one produces results above a confidence threshold.
- *
- * @typeParam T - The domain model type (Experience, Accomplishment, etc.)
- */
-export class ExtractionPipeline<T> {
-  private readonly strategies: ExtractionStrategy[]
-  private readonly interpreter: SectionInterpreter<T>
-  private readonly options: Required<PipelineOptions>
+export interface PipelineResult<T> {
+  items: T[]
+  diagnostics: PipelineDiagnostics
+}
 
-  constructor(
-    strategies: ExtractionStrategy[],
-    interpreter: SectionInterpreter<T>,
-    options: PipelineOptions = {},
-  ) {
-    // Sort by priority (lower = higher priority)
-    this.strategies = [...strategies].sort((a, b) => a.priority - b.priority)
-    this.interpreter = interpreter
-    this.options = {
-      confidenceThreshold: options.confidenceThreshold ?? 0.5,
-      captureHtmlOnFailure: options.captureHtmlOnFailure ?? false,
-      containerSelector: options.containerSelector ?? '',
-    }
+export interface PipelineConfig<T> {
+  pageExtractor: PageExtractor
+  textExtractors: TextExtractor[]
+  parser: Parser<T>
+  confidenceThreshold?: number
+  deduplicateKey?: (item: T) => string
+  captureHtmlOnFailure?: boolean
+}
+
+export class ExtractionPipeline<T> {
+  private readonly config: PipelineConfig<T>
+  private readonly textExtractors: TextExtractor[]
+
+  constructor(config: PipelineConfig<T>) {
+    this.config = config
+    this.textExtractors = [...config.textExtractors].sort(
+      (a, b) => a.priority - b.priority,
+    )
   }
 
-  async extract(page: Page): Promise<PipelineResult<T>> {
+  async extract(extractorConfig: PageExtractorConfig): Promise<PipelineResult<T>> {
     const startTime = Date.now()
     const diagnostics: PipelineDiagnostics = {
-      strategiesAttempted: [],
-      strategiesFailed: [],
-      strategyUsed: null,
+      sectionName: this.config.pageExtractor.sectionName,
+      textExtractorsAttempted: [],
+      textExtractorUsed: null,
       itemsFound: 0,
       itemsParsed: 0,
       itemsFailed: 0,
+      avgConfidence: 0,
       durationMs: 0,
     }
 
-    for (const strategy of this.strategies) {
-      diagnostics.strategiesAttempted.push(strategy.name)
+    const pageResult = await this.config.pageExtractor.extract(extractorConfig)
+    let items: T[] = []
+    let totalConfidence = 0
 
-      try {
-        const canHandle = await strategy.canHandle(
-          page,
-          this.options.containerSelector || undefined,
+    switch (pageResult.kind) {
+      case 'list': {
+        const handled = await this.handleList(pageResult.items, diagnostics)
+        items = handled.items
+        totalConfidence = handled.totalConfidence
+        break
+      }
+      case 'single': {
+        const handled = await this.handleSingle(
+          pageResult.element,
+          pageResult.context,
+          diagnostics,
         )
-        if (!canHandle) {
-          log.debug(`Pipeline: ${strategy.name} cannot handle this page`)
-          diagnostics.strategiesFailed.push(strategy.name)
-          continue
-        }
-
-        const items = await strategy.findItems(
-          page,
-          this.options.containerSelector || undefined,
-        )
-        if (!items || items.length === 0) {
-          log.debug(`Pipeline: ${strategy.name} found no items`)
-          diagnostics.strategiesFailed.push(strategy.name)
-          continue
-        }
-
-        diagnostics.itemsFound = items.length
-        log.debug(
-          `Pipeline: ${strategy.name} found ${items.length} items, extracting...`,
-        )
-
-        const results: T[] = []
-        let totalConfidence = 0
-
-        for (const item of items) {
-          try {
-            const extracted = await strategy.extractItem(item)
-            if (!extracted) {
-              diagnostics.itemsFailed++
-              continue
-            }
-
-            const interpreted = this.interpreter.interpret(extracted)
-            if (!interpreted) {
-              diagnostics.itemsFailed++
-              continue
-            }
-
-            if (this.interpreter.validate(interpreted)) {
-              results.push(interpreted)
-              totalConfidence += extracted.confidence
-              diagnostics.itemsParsed++
-            } else {
-              diagnostics.itemsFailed++
-            }
-          } catch (e) {
-            log.debug(`Pipeline: error processing item: ${e}`)
-            diagnostics.itemsFailed++
-          }
-        }
-
-        if (results.length === 0) {
-          diagnostics.strategiesFailed.push(strategy.name)
-          continue
-        }
-
-        const avgConfidence = totalConfidence / results.length
-
-        if (avgConfidence >= this.options.confidenceThreshold) {
-          diagnostics.strategyUsed = strategy.name
-          diagnostics.durationMs = Date.now() - startTime
-          log.debug(
-            `Pipeline: ${strategy.name} succeeded with ${results.length} items (confidence: ${avgConfidence.toFixed(2)})`,
-          )
-
-          return {
-            items: results,
-            strategy: strategy.name,
-            confidence: avgConfidence,
-            diagnostics,
-          }
-        }
-
-        // Below threshold but has results - keep trying but remember as fallback
-        log.debug(
-          `Pipeline: ${strategy.name} below confidence threshold (${avgConfidence.toFixed(2)} < ${this.options.confidenceThreshold})`,
-        )
-        diagnostics.strategiesFailed.push(strategy.name)
-      } catch (e) {
-        log.debug(`Pipeline: ${strategy.name} threw: ${e}`)
-        diagnostics.strategiesFailed.push(strategy.name)
+        items = handled.items
+        totalConfidence = handled.totalConfidence
+        break
+      }
+      case 'raw': {
+        items = this.handleRaw(pageResult.data, diagnostics)
+        break
       }
     }
 
-    // All strategies failed
-    if (this.options.captureHtmlOnFailure) {
+    if (this.config.deduplicateKey) {
+      items = deduplicateItems(items, this.config.deduplicateKey)
+    }
+
+    if (items.length > 0) {
+      diagnostics.avgConfidence = totalConfidence / items.length
+    }
+
+    if (this.config.captureHtmlOnFailure && items.length === 0) {
       try {
-        const scope = this.options.containerSelector
-          ? page.locator(this.options.containerSelector)
-          : page.locator('main')
-        const html = await scope.innerHTML().catch(() => '')
-        // Trim to reasonable size for LLM processing
-        diagnostics.capturedHtml = html.slice(0, 8000)
+        diagnostics.capturedHtml = (await extractorConfig.page
+          .locator('main')
+          .innerHTML()
+          .catch(() => '')
+        ).slice(0, 8000)
       } catch {
-        // Best effort
+        // Best effort.
       }
     }
 
     diagnostics.durationMs = Date.now() - startTime
-    log.debug(
-      `Pipeline: all strategies failed for ${this.interpreter.sectionName}`,
-    )
-
-    return {
-      items: [],
-      strategy: 'none',
-      confidence: 0,
-      diagnostics,
-    }
+    return { items, diagnostics }
   }
+
+  private async handleList(
+    taggedLocators: TaggedLocator[],
+    diagnostics: PipelineDiagnostics,
+  ): Promise<{ items: T[]; totalConfidence: number }> {
+    diagnostics.itemsFound = taggedLocators.length
+
+    const items: T[] = []
+    let totalConfidence = 0
+
+    for (const { locator, context } of taggedLocators) {
+      const extracted = await this.extractText(locator, diagnostics)
+      if (!extracted) {
+        diagnostics.itemsFailed++
+        continue
+      }
+
+      const parsed = this.config.parser.parse({
+        texts: extracted.texts,
+        links: extracted.links,
+        subItems: extracted.subItems?.map((subItem) => ({
+          texts: subItem.texts,
+          links: subItem.links,
+          context,
+        })),
+        context,
+      })
+
+      if (parsed && this.config.parser.validate(parsed)) {
+        items.push(parsed)
+        diagnostics.itemsParsed++
+        totalConfidence += extracted.confidence
+      } else {
+        diagnostics.itemsFailed++
+      }
+    }
+
+    return { items, totalConfidence }
+  }
+
+  private async handleSingle(
+    element: Locator,
+    context: Record<string, string>,
+    diagnostics: PipelineDiagnostics,
+  ): Promise<{ items: T[]; totalConfidence: number }> {
+    diagnostics.itemsFound = 1
+
+    const extracted = await this.extractText(element, diagnostics)
+    if (!extracted) {
+      diagnostics.itemsFailed = 1
+      return { items: [], totalConfidence: 0 }
+    }
+
+    const parsed = this.config.parser.parse({
+      texts: extracted.texts,
+      links: extracted.links,
+      context,
+    })
+
+    if (parsed && this.config.parser.validate(parsed)) {
+      diagnostics.itemsParsed = 1
+      return { items: [parsed], totalConfidence: extracted.confidence }
+    }
+
+    diagnostics.itemsFailed = 1
+    return { items: [], totalConfidence: 0 }
+  }
+
+  private handleRaw(data: RawSection[], diagnostics: PipelineDiagnostics): T[] {
+    diagnostics.itemsFound = data.length
+
+    if (hasParseRaw(this.config.parser)) {
+      const items = this.config.parser.parseRaw(data)
+      diagnostics.itemsParsed = items.length
+      diagnostics.itemsFailed = Math.max(0, data.length - items.length)
+      return items
+    }
+
+    const items: T[] = []
+    for (const section of data) {
+      const parsed = this.config.parser.parse({
+        texts: [section.heading, section.text],
+        links: section.anchors
+          .filter((anchor) => !!anchor.href)
+          .map((anchor) => ({
+            url: anchor.href ?? '',
+            text: anchor.text ?? '',
+            isExternal: true,
+          })),
+        context: { heading: section.heading },
+      })
+
+      if (parsed && this.config.parser.validate(parsed)) {
+        items.push(parsed)
+        diagnostics.itemsParsed++
+      } else {
+        diagnostics.itemsFailed++
+      }
+    }
+
+    return items
+  }
+
+  private async extractText(
+    element: Locator,
+    diagnostics: PipelineDiagnostics,
+  ): Promise<ExtractedText | null> {
+    const threshold = this.config.confidenceThreshold ?? 0.5
+    let bestBelowThreshold: ExtractedText | null = null
+
+    for (const extractor of this.textExtractors) {
+      addAttempt(diagnostics.textExtractorsAttempted, extractor.name)
+
+      try {
+        if (!(await extractor.canHandle(element))) {
+          continue
+        }
+
+        const extracted = await extractor.extract(element)
+        if (!extracted || extracted.texts.length === 0) {
+          continue
+        }
+
+        if (extracted.confidence >= threshold) {
+          diagnostics.textExtractorUsed ??= extractor.name
+          return extracted
+        }
+
+        if (
+          !bestBelowThreshold ||
+          extracted.confidence > bestBelowThreshold.confidence
+        ) {
+          bestBelowThreshold = extracted
+        }
+      } catch (e) {
+        log.debug(`Pipeline text extraction failed with ${extractor.name}: ${e}`)
+      }
+    }
+
+    if (bestBelowThreshold) {
+      diagnostics.textExtractorUsed ??= 'low-confidence-fallback'
+      return bestBelowThreshold
+    }
+
+    return null
+  }
+}
+
+function addAttempt(attempts: string[], name: string): void {
+  if (!attempts.includes(name)) {
+    attempts.push(name)
+  }
+}
+
+function hasParseRaw<T>(parser: Parser<T>): parser is RawParser<T> {
+  return 'parseRaw' in parser && typeof parser.parseRaw === 'function'
 }
