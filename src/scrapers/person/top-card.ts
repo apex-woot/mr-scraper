@@ -1,15 +1,11 @@
 import type { Locator, Page } from 'playwright'
+import { TopCardPageExtractor } from '../../extraction/page-extractors'
 
 export interface TopCardPersonInfo {
   name: string
   headline: string | null
   origin: string | null
 }
-
-const ROOT_SELECTORS = [
-  'section.artdeco-card[data-member-id]',
-  'main section.artdeco-card',
-] as const
 
 const NAME_SELECTORS = ['h1.inline.t-24', 'h1'] as const
 
@@ -26,7 +22,7 @@ const ORIGIN_SELECTORS = [
 export async function extractTopCardFromPage(
   page: Page,
 ): Promise<TopCardPersonInfo> {
-  const root = await resolveRoot(page)
+  const root = await resolveTopCardRoot(page)
   const name = (await extractName(root)) ?? 'Unknown'
   const headline = await extractHeadline(root, name)
   const origin = await extractOrigin(root)
@@ -38,12 +34,15 @@ export async function extractTopCardFromPage(
   }
 }
 
-async function resolveRoot(page: Page): Promise<Locator> {
-  for (const selector of ROOT_SELECTORS) {
-    const candidate = page.locator(selector).first()
-    if ((await candidate.count()) > 0) {
-      return candidate
-    }
+async function resolveTopCardRoot(page: Page): Promise<Locator> {
+  const extractor = new TopCardPageExtractor()
+  const result = await extractor.extract({
+    baseUrl: page.url(),
+    page,
+  })
+
+  if (result.kind === 'single') {
+    return result.element
   }
 
   return page.locator('main').first()
@@ -123,7 +122,9 @@ function normalizeOrigin(input: string | null | undefined): string | null {
     return null
   }
 
-  const withoutContactInfo = normalized.replace(/\bContact info\b.*/i, '').trim()
+  const withoutContactInfo = normalized
+    .replace(/\bContact info\b.*/i, '')
+    .trim()
   return withoutContactInfo || null
 }
 
