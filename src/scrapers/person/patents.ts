@@ -1,15 +1,7 @@
 import type { Locator, Page } from 'playwright'
-import { SCRAPING_CONSTANTS } from '../../config/constants'
-import { PATENT_ITEM_SELECTORS } from '../../config/selectors'
+import { PatentPageExtractor } from '../../extraction/page-extractors'
 import type { Patent } from '../../models/person'
 import { log } from '../../utils/logger'
-import { trySelectorsForAll } from '../../utils/selector-utils'
-import {
-  navigateAndWait,
-  scrollPageToBottom,
-  scrollPageToHalf,
-  waitAndFocus,
-} from '../utils'
 import { normalizePlainTextLines, toPlainText } from './utils'
 import { deduplicateItems, parseItems } from './common-patterns'
 
@@ -81,81 +73,30 @@ export async function getPatents(
   const patents: Patent[] = []
 
   try {
-    // Check main page first (optional, but good for completeness)
-    const patentsHeading = page.locator('h2:has-text("Patents")').first()
-
-    // Note: Patents usually appear in the "Accomplishments" section or a standalone section
-    // on the main profile. Implementation below mirrors Educations/Accomplishments logic.
-    if ((await patentsHeading.count()) > 0) {
-      let patentsSection = patentsHeading.locator(
-        'xpath=ancestor::*[.//ul or .//ol][1]',
-      )
-      if ((await patentsSection.count()) === 0)
-        patentsSection = patentsHeading.locator('xpath=ancestor::*[4]')
-
-      if ((await patentsSection.count()) > 0) {
-        const items = await patentsSection.locator('ul > li, ol > li').all()
-        const parsed = await parseItems(items, parseMainPagePatent, {
-          itemType: 'patent from main page',
-        })
-        patents.push(...parsed)
-      }
+    const extraction = await new PatentPageExtractor().extract({
+      page,
+      baseUrl,
+    })
+    if (extraction.kind !== 'list' || extraction.items.length === 0) {
+      return []
     }
 
-    // If no patents found on main page, or we want to be thorough, check details page
-    // Typically scraping the details page is more reliable for full lists
-    if (patents.length === 0) {
-      const patentsUrl = `${baseUrl.replace(/\/$/, '')}/details/patents/`
+    const items = extraction.items.map((item) => item.locator)
+    log.info(`Got ${items.length} patent candidates`)
 
-      // We only navigate if we suspect there are patents (or always if we want to be safe)
-      // For now, let's try navigating if we found nothing, or if we want to ensure full list.
-      // Since "Patents" can be a separate section, we'll try to fetch it.
-
-      try {
-        await navigateAndWait(page, patentsUrl)
-      } catch (_e) {
-        // If navigation fails (e.g. 404), it might mean no patents section exists
-        return patents
-      }
-
-      // Check if we are actually on the patents page (or redirected back/404)
-      if (
-        page.url() !== patentsUrl &&
-        !page.url().includes('/details/patents')
-      ) {
-        return patents
-      }
-
-      await page.waitForSelector('main', { timeout: 10000 })
-      await waitAndFocus(page, SCRAPING_CONSTANTS.PATENTS_FOCUS_WAIT)
-      await scrollPageToHalf(page)
-      await scrollPageToBottom(
-        page,
-        SCRAPING_CONSTANTS.PATENTS_SCROLL_PAUSE,
-        SCRAPING_CONSTANTS.PATENTS_MAX_SCROLLS,
-      )
-
-      const itemsResult = await trySelectorsForAll(
-        page,
-        PATENT_ITEM_SELECTORS,
-        1,
-      )
-
-      log.info(`Got ${itemsResult.value.length} patents`)
-      log.debug(
-        `Found ${itemsResult.value.length} patent items using: ${itemsResult.usedSelector}`,
-      )
-
-      const parsed = await parseItems(itemsResult.value, parsePatentItem, {
-        itemType: 'patent item',
-      })
-      patents.push(...parsed)
-    }
+    const parsed = await parseItems(items, parseExtractedPatent, {
+      itemType: 'patent item',
+    })
+    patents.push(...parsed)
   } catch (e) {
     log.warning(`Error getting patents: ${e}`)
   }
 
   return deduplicateItems(patents, (p) => `${p.title}|${p.number || ''}`)
+}
+
+async function parseExtractedPatent(item: Locator): Promise<Patent | null> {
+  return (await parsePatentItem(item)) ?? (await parseMainPagePatent(item))
 }
 
 async function parseMainPagePatent(item: Locator): Promise<Patent | null> {
