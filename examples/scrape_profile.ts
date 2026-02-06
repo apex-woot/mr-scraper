@@ -1,11 +1,11 @@
 import { BrowserManager, createConsoleCallback, loginWithCookie, loginWithCredentials, scrapePerson } from '../src'
 
 async function runExample() {
-  const defaultUrl = ''
-
   console.log('\n--- LinkedIn Profile Scraper ---')
-  const inputUrl = prompt('Enter LinkedIn Profile URL (or press Enter for default):', defaultUrl)
-  const linkedinUrl = inputUrl || defaultUrl
+  const linkedinUrl = process.argv[2]?.trim() || prompt('Enter LinkedIn profile URL:', '')?.trim() || ''
+  if (!linkedinUrl) {
+    throw new Error('A LinkedIn profile URL is required.')
+  }
 
   const outputChoice = prompt(
     'How would you like to save the output?\n  1. Save to JSON file (default)\n  2. Print all to console\nEnter choice (1 or 2):',

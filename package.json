@@ -59,6 +59,8 @@
     "test": "bun test",
     "scrape": "bun run index.ts",
     "scrape:details": "bun run examples/scrape_details_section.ts",
+    "scrape:education": "bun run examples/scrape_education_only.ts",
+    "scrape:publications": "bun run examples/scrape_publications_only.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
