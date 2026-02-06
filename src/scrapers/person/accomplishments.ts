@@ -1,10 +1,12 @@
 import type { Page } from 'playwright'
-import { AccomplishmentInterpreter } from '../../extraction/interpreters/accomplishment'
+import { AccomplishmentParser } from '../../extraction/parsers'
 import { AccomplishmentPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import { AriaStrategy } from '../../extraction/strategies/aria-strategy'
-import { RawTextStrategy } from '../../extraction/strategies/raw-text-strategy'
-import { SemanticStrategy } from '../../extraction/strategies/semantic-strategy'
+import {
+  AriaTextExtractor,
+  RawTextExtractor,
+  SemanticTextExtractor,
+} from '../../extraction/text-extractors'
 import type { Accomplishment } from '../../models'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
@@ -28,31 +30,22 @@ export async function getAccomplishments(
 
   for (const [urlPath, category] of accomplishmentSections) {
     try {
-      const extraction = await new AccomplishmentPageExtractor({
-        urlPath,
-        category,
-      }).extract({
-        page,
-        baseUrl,
-      })
-      if (extraction.kind !== 'list' || extraction.items.length === 0) {
-        continue
-      }
-
-      const pipeline = new ExtractionPipeline<Accomplishment>(
-        [
-          new AriaStrategy('accomplishment'),
-          new SemanticStrategy(),
-          new RawTextStrategy(),
+      const pipeline = new ExtractionPipeline<Accomplishment>({
+        pageExtractor: new AccomplishmentPageExtractor({
+          urlPath,
+          category,
+        }),
+        textExtractors: [
+          new AriaTextExtractor(),
+          new SemanticTextExtractor(),
+          new RawTextExtractor(),
         ],
-        new AccomplishmentInterpreter({ category, urlPath }),
-        {
-          confidenceThreshold: 0.25,
-          captureHtmlOnFailure: true,
-        },
-      )
+        parser: new AccomplishmentParser(),
+        confidenceThreshold: 0.25,
+        captureHtmlOnFailure: true,
+      })
 
-      const result = await pipeline.extract(page)
+      const result = await pipeline.extract({ page, baseUrl })
       if (result.items.length > 0) {
         const unique = deduplicateItems(
           result.items,
@@ -62,7 +55,7 @@ export async function getAccomplishments(
       }
 
       log.info(
-        `Got ${result.items.length} ${category} items (strategy: ${result.strategy}, confidence: ${result.confidence.toFixed(2)})`,
+        `Got ${result.items.length} ${category} items (extractor: ${result.diagnostics.textExtractorUsed ?? 'none'}, confidence: ${result.diagnostics.avgConfidence.toFixed(2)})`,
       )
     } catch (e) {
       log.debug(`Error getting ${category}s: ${e}`)

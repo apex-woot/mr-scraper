@@ -1,10 +1,12 @@
 import type { Page } from 'playwright'
+import { ExperienceParser } from '../../extraction/parsers'
 import { ExperiencePageExtractor } from '../../extraction/page-extractors'
-import { ExperienceInterpreter } from '../../extraction/interpreters/experience'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import { AriaStrategy } from '../../extraction/strategies/aria-strategy'
-import { RawTextStrategy } from '../../extraction/strategies/raw-text-strategy'
-import { SemanticStrategy } from '../../extraction/strategies/semantic-strategy'
+import {
+  AriaTextExtractor,
+  RawTextExtractor,
+  SemanticTextExtractor,
+} from '../../extraction/text-extractors'
 import type { Experience } from '../../models/person'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
@@ -14,36 +16,27 @@ export async function getExperiences(
   baseUrl: string,
 ): Promise<Experience[]> {
   try {
-    const extraction = await new ExperiencePageExtractor().extract({
-      page,
-      baseUrl,
-    })
-    if (extraction.kind !== 'list' || extraction.items.length === 0) {
-      return []
-    }
-
-    const pipeline = new ExtractionPipeline<Experience>(
-      [
-        new AriaStrategy('experience'),
-        new SemanticStrategy(),
-        new RawTextStrategy(),
+    const pipeline = new ExtractionPipeline<Experience>({
+      pageExtractor: new ExperiencePageExtractor(),
+      textExtractors: [
+        new AriaTextExtractor(),
+        new SemanticTextExtractor(),
+        new RawTextExtractor(),
       ],
-      new ExperienceInterpreter(),
-      {
-        confidenceThreshold: 0.3,
-        captureHtmlOnFailure: true,
-      },
-    )
+      parser: new ExperienceParser(),
+      confidenceThreshold: 0.3,
+      captureHtmlOnFailure: true,
+    })
 
-    const result = await pipeline.extract(page)
+    const result = await pipeline.extract({ page, baseUrl })
 
     log.info(
-      `Got ${result.items.length} experiences (strategy: ${result.strategy}, confidence: ${result.confidence.toFixed(2)})`,
+      `Got ${result.items.length} experiences (extractor: ${result.diagnostics.textExtractorUsed ?? 'none'}, confidence: ${result.diagnostics.avgConfidence.toFixed(2)})`,
     )
 
     if (result.items.length === 0) {
       log.debug(
-        `Experience extraction failed. Strategies attempted: ${result.diagnostics.strategiesAttempted.join(', ')}`,
+        `Experience extraction failed. Text extractors attempted: ${result.diagnostics.textExtractorsAttempted.join(', ')}`,
       )
     }
 
