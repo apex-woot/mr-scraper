@@ -1,5 +1,12 @@
 import type { Page } from 'playwright'
+import { AboutParser } from '../../extraction/parsers'
 import { AboutPageExtractor } from '../../extraction/page-extractors'
+import { ExtractionPipeline } from '../../extraction/pipeline'
+import {
+  AriaTextExtractor,
+  RawTextExtractor,
+  SemanticTextExtractor,
+} from '../../extraction/text-extractors'
 import { log } from '../../utils/logger'
 import { getAttributeSafe } from '../utils'
 import { extractTopCardFromPage } from './top-card'
@@ -45,39 +52,23 @@ export async function checkOpenToWork(page: Page): Promise<boolean> {
 
 export async function getAbout(page: Page): Promise<string | null> {
   try {
-    const extractor = new AboutPageExtractor()
-    const result = await extractor.extract({
-      baseUrl: page.url(),
-      page,
+    const pipeline = new ExtractionPipeline<string>({
+      pageExtractor: new AboutPageExtractor(),
+      textExtractors: [
+        new AriaTextExtractor(),
+        new SemanticTextExtractor(),
+        new RawTextExtractor(),
+      ],
+      parser: new AboutParser(),
+      confidenceThreshold: 0.1,
+      captureHtmlOnFailure: true,
     })
 
-    if (result.kind !== 'single') {
-      return null
-    }
-
-    const root = result.element
-
-    const rootText = await root.textContent()
-    const normalizedRootText = rootText?.trim()
-    if (normalizedRootText && normalizedRootText.length > 0) {
-      if (normalizedRootText.length > 50 || rootText?.includes('\n')) {
-        return normalizedRootText
-      }
-    }
-
-    const textBox = root.locator('[data-testid="expandable-text-box"]').first()
-    if ((await textBox.count()) > 0) {
-      const text = await textBox.textContent()
-      return text ? text.trim() : null
-    }
-
-    const aboutSpans = await root.locator('span[aria-hidden="true"]').all()
-    if (aboutSpans.length > 1) {
-      const aboutText = await aboutSpans[1]?.textContent()
-      return aboutText ? aboutText.trim() : null
-    }
-
-    return null
+    const result = await pipeline.extract({
+      page,
+      baseUrl: page.url(),
+    })
+    return result.items[0] ?? null
   } catch (e) {
     log.debug(`Error getting about section: ${e}`)
     return null
