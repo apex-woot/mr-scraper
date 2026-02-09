@@ -7,6 +7,16 @@ describe('buildResumePdfFileName', () => {
     expect(result).toBe('my_resume.pdf')
   })
 
+  test('keeps explicit file name precedence over person name and suggestion', () => {
+    const result = buildResumePdfFileName(
+      'https://www.linkedin.com/in/sample-user/',
+      'Sample User',
+      'custom-name',
+      'LinkedIn Profile.pdf',
+    )
+    expect(result).toBe('custom-name.pdf')
+  })
+
   test('uses person name when no explicit file name is provided', () => {
     const result = buildResumePdfFileName(
       'https://www.linkedin.com/in/sample-user/',
@@ -17,6 +27,11 @@ describe('buildResumePdfFileName', () => {
     expect(result).toBe('Stacy_Weinstein_Ehrlich.pdf')
   })
 
+  test('sanitizes special characters in person name', () => {
+    const result = buildResumePdfFileName('https://www.linkedin.com/in/sample-user/', "Alex O'Neil / R&D")
+    expect(result).toBe('Alex_O_Neil_R_D.pdf')
+  })
+
   test('falls back to download suggested filename', () => {
     const result = buildResumePdfFileName(
       'https://www.linkedin.com/in/sample-user/',
@@ -25,6 +40,16 @@ describe('buildResumePdfFileName', () => {
       'LinkedIn Profile.pdf',
     )
     expect(result).toBe('LinkedIn_Profile.pdf')
+  })
+
+  test('ignores Unknown person name and falls back to suggested filename', () => {
+    const result = buildResumePdfFileName(
+      'https://www.linkedin.com/in/sample-user/',
+      'Unknown',
+      undefined,
+      'LinkedIn Resume.pdf',
+    )
+    expect(result).toBe('LinkedIn_Resume.pdf')
   })
 
   test('uses linkedin profile slug when no file names are provided', () => {

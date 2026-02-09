@@ -61,6 +61,31 @@ describe('TopCardParser', () => {
       origin: 'Washington, District of Columbia, United States',
     })
   })
+
+  test('returns null when only dropdown action labels are present', () => {
+    const parsed = parser.parse({
+      texts: ['More', 'Send profile in a message', 'Save to PDF', 'Follow', 'About this profile'],
+      links: [],
+      context: {},
+    })
+
+    expect(parsed).toBeNull()
+  })
+
+  test('accepts apostrophes and hyphens in names', () => {
+    const parsed = parser.parse({
+      texts: ["Anne-Marie O'Neil", 'VP, Product', 'New York, New York, United States'],
+      links: [],
+      context: {},
+    })
+
+    expect(parsed).toEqual({
+      name: "Anne-Marie O'Neil",
+      headline: 'VP, Product',
+      currentPosition: 'VP, Product',
+      origin: 'New York, New York, United States',
+    })
+  })
 })
 
 describe('AboutParser', () => {
