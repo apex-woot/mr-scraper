@@ -1,9 +1,14 @@
 import { BrowserManager, loginWithCookie, loginWithCredentials } from '../src'
+import { AccomplishmentPageExtractor } from '../src/extraction/page-extractors'
+import { AccomplishmentParser } from '../src/extraction/parsers'
+import { ExtractionPipeline } from '../src/extraction/pipeline'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../src/extraction/text-extractors'
+import type { Accomplishment } from '../src/models'
 import { getContactInfo } from '../src/scrapers/person/contact-info'
 import { getExperiences } from '../src/scrapers/person/experiences'
 import { getPatents } from '../src/scrapers/person/patents'
 
-type DetailsSection = 'experience' | 'patents' | 'contact-info'
+type DetailsSection = 'experience' | 'patents' | 'publications' | 'contact-info'
 
 function parseDetailsUrl(input: string): {
   baseProfileUrl: string
@@ -12,11 +17,17 @@ function parseDetailsUrl(input: string): {
   const url = new URL(input)
   const path = url.pathname.replace(/\/+$/, '')
 
-  const detailsMatch = path.match(/^\/in\/([^/]+)\/details\/(experience|patents)$/)
+  const detailsMatch = path.match(
+    /^\/in\/([^/]+)\/details\/(experience|patents|publications|publication|piblicaion|piblecation)$/,
+  )
   if (detailsMatch?.[1] && detailsMatch[2]) {
+    const rawSection = detailsMatch[2]
+    const section: DetailsSection =
+      rawSection === 'experience' || rawSection === 'patents' ? rawSection : 'publications'
+
     return {
       baseProfileUrl: `${url.protocol}//${url.host}/in/${detailsMatch[1]}/`,
-      section: detailsMatch[2] as DetailsSection,
+      section,
     }
   }
 
@@ -29,8 +40,27 @@ function parseDetailsUrl(input: string): {
   }
 
   throw new Error(
-    'URL must look like https://www.linkedin.com/in/<id>/details/experience/, /details/patents/, or /overlay/contact-info/',
+    'URL must look like https://www.linkedin.com/in/<id>/details/experience/, /details/patents/, /details/publications/, or /overlay/contact-info/',
   )
+}
+
+async function getPublications(
+  baseProfileUrl: string,
+  page: InstanceType<typeof BrowserManager>['page'],
+): Promise<Accomplishment[]> {
+  const pipeline = new ExtractionPipeline<Accomplishment>({
+    pageExtractor: new AccomplishmentPageExtractor({
+      urlPath: 'publications',
+      category: 'publication',
+    }),
+    textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
+    parser: new AccomplishmentParser(),
+    confidenceThreshold: 0.25,
+    captureHtmlOnFailure: true,
+  })
+
+  const result = await pipeline.extract({ page, baseUrl: baseProfileUrl })
+  return result.items.filter((item) => item.category === 'publication')
 }
 
 async function runExample() {
@@ -38,7 +68,7 @@ async function runExample() {
   const inputUrl =
     process.argv[2]?.trim() ||
     prompt(
-      'Enter LinkedIn details URL (/details/experience, /details/patents, or /overlay/contact-info):',
+      'Enter LinkedIn details URL (/details/experience, /details/patents, /details/publications, or /overlay/contact-info):',
       '',
     )?.trim() ||
     ''
@@ -49,6 +79,7 @@ async function runExample() {
   const { baseProfileUrl, section } = parseDetailsUrl(inputUrl)
   const isHeadless = process.argv.includes('--headless')
   const shouldPrint = process.argv.includes('--print')
+  const includePlainText = process.argv.includes('--include-plain-text')
 
   console.log(`\nInput details URL: ${inputUrl}`)
   console.log(`Profile URL: ${baseProfileUrl}`)
@@ -111,6 +142,29 @@ async function runExample() {
       const filename = `details_patents_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
       await Bun.write(filename, JSON.stringify(output, null, 2))
       console.log(`\nSaved ${patents.length} patents to: ${filename}`)
+      return
+    }
+
+    if (section === 'publications') {
+      const publications = await getPublications(baseProfileUrl, browser.page)
+      const normalizedPublications = includePlainText
+        ? publications
+        : publications.map(({ plainText: _plainText, ...publication }) => publication)
+      const output = {
+        inputUrl,
+        section,
+        count: normalizedPublications.length,
+        publications: normalizedPublications,
+      }
+
+      if (shouldPrint) {
+        console.log(`\n${JSON.stringify(output, null, 2)}`)
+        return
+      }
+
+      const filename = `details_publications_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+      await Bun.write(filename, JSON.stringify(output, null, 2))
+      console.log(`\nSaved ${publications.length} publications to: ${filename}`)
       return
     }
 
