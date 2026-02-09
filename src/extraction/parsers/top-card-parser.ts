@@ -56,6 +56,8 @@ function isTopCardNoiseLine(line: string): boolean {
 
   if (lower === 'contact info' || lower === 'more') return true
   if (lower === 'message' || lower === 'connect' || lower === 'follow') return true
+  if (lower === 'save to pdf' || lower === 'send profile in a message') return true
+  if (lower === 'report / block' || lower === 'about this profile') return true
   if (lower.includes('open to work')) return true
   if (lower.includes('connection') || lower.includes('follower')) return true
 
@@ -66,9 +68,9 @@ function isLikelyNameLine(line: string): boolean {
   if (line.length > 80 || /\d/.test(line)) return false
 
   const words = line.split(/\s+/).filter(Boolean)
-  if (words.length < 2 || words.length > 5) return false
+  if (words.length < 2 || words.length > 6) return false
 
-  return words.every((word) => /^[A-Za-z][A-Za-z.'-]*$/.test(word))
+  return words.every((word) => /^[A-Za-z][A-Za-z.'()-]*$/.test(word))
 }
 
 function isLikelyLocationLine(line: string): boolean {

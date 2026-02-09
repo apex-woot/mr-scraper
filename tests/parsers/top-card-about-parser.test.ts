@@ -40,6 +40,27 @@ describe('TopCardParser', () => {
       origin: 'Riverton, Colorado, United States',
     })
   })
+
+  test('supports parenthesized names and ignores action menu labels', () => {
+    const parsed = parser.parse({
+      texts: [
+        'Send profile in a message',
+        'Save to PDF',
+        'Stacy (Weinstein) Ehrlich',
+        'Partner',
+        'Washington, District of Columbia, United States',
+      ],
+      links: [],
+      context: {},
+    })
+
+    expect(parsed).toEqual({
+      name: 'Stacy (Weinstein) Ehrlich',
+      headline: 'Partner',
+      currentPosition: 'Partner',
+      origin: 'Washington, District of Columbia, United States',
+    })
+  })
 })
 
 describe('AboutParser', () => {
