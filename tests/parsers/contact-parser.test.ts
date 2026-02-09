@@ -37,4 +37,33 @@ describe('ContactParser', () => {
       { type: 'phone', value: '+1 (555) 123-4567' },
     ])
   })
+
+  test('parses overlay-style profile and website contacts', () => {
+    const sections: RawSection[] = [
+      {
+        heading: "russ' profile",
+        text: 'Russ profile linkedin.com/in/sample-user',
+        labels: [],
+        anchors: [{ href: 'https://www.linkedin.com/in/sample-user', text: 'linkedin.com/in/sample-user' }],
+      },
+      {
+        heading: 'website',
+        text: 'Website example.test (Company)',
+        labels: ['Company'],
+        anchors: [{ href: 'https://example.test', text: 'example.test' }],
+      },
+      {
+        heading: 'get up to 4.6x replies when you message with inmail',
+        text: 'upsell content',
+        labels: [],
+        anchors: [],
+      },
+    ]
+
+    const parsed = parser.parseRaw(sections)
+    expect(parsed).toEqual([
+      { type: 'linkedin', value: 'https://www.linkedin.com/in/sample-user' },
+      { type: 'website', value: 'https://example.test', label: 'Company' },
+    ])
+  })
 })

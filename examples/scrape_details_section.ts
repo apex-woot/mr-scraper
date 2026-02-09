@@ -1,8 +1,9 @@
 import { BrowserManager, loginWithCookie, loginWithCredentials } from '../src'
+import { getContactInfo } from '../src/scrapers/person/contact-info'
 import { getExperiences } from '../src/scrapers/person/experiences'
 import { getPatents } from '../src/scrapers/person/patents'
 
-type DetailsSection = 'experience' | 'patents'
+type DetailsSection = 'experience' | 'patents' | 'contact-info'
 
 function parseDetailsUrl(input: string): {
   baseProfileUrl: string
@@ -11,22 +12,35 @@ function parseDetailsUrl(input: string): {
   const url = new URL(input)
   const path = url.pathname.replace(/\/+$/, '')
 
-  const match = path.match(/^\/in\/([^/]+)\/details\/(experience|patents)$/)
-  if (!match?.[1] || !match[2]) {
-    throw new Error('URL must look like https://www.linkedin.com/in/<id>/details/experience/ or /details/patents/')
+  const detailsMatch = path.match(/^\/in\/([^/]+)\/details\/(experience|patents)$/)
+  if (detailsMatch?.[1] && detailsMatch[2]) {
+    return {
+      baseProfileUrl: `${url.protocol}//${url.host}/in/${detailsMatch[1]}/`,
+      section: detailsMatch[2] as DetailsSection,
+    }
   }
 
-  return {
-    baseProfileUrl: `${url.protocol}//${url.host}/in/${match[1]}/`,
-    section: match[2] as DetailsSection,
+  const contactMatch = path.match(/^\/in\/([^/]+)\/overlay\/contact-info$/)
+  if (contactMatch?.[1]) {
+    return {
+      baseProfileUrl: `${url.protocol}//${url.host}/in/${contactMatch[1]}/`,
+      section: 'contact-info',
+    }
   }
+
+  throw new Error(
+    'URL must look like https://www.linkedin.com/in/<id>/details/experience/, /details/patents/, or /overlay/contact-info/',
+  )
 }
 
 async function runExample() {
   console.log('\n--- LinkedIn Details Section Scraper ---')
   const inputUrl =
     process.argv[2]?.trim() ||
-    prompt('Enter LinkedIn details URL (/details/experience or /details/patents):', '')?.trim() ||
+    prompt(
+      'Enter LinkedIn details URL (/details/experience, /details/patents, or /overlay/contact-info):',
+      '',
+    )?.trim() ||
     ''
   if (!inputUrl) {
     throw new Error('A LinkedIn details URL is required.')
@@ -80,12 +94,32 @@ async function runExample() {
       return
     }
 
-    const patents = await getPatents(browser.page, baseProfileUrl)
+    if (section === 'patents') {
+      const patents = await getPatents(browser.page, baseProfileUrl)
+      const output = {
+        inputUrl,
+        section,
+        count: patents.length,
+        patents,
+      }
+
+      if (shouldPrint) {
+        console.log(`\n${JSON.stringify(output, null, 2)}`)
+        return
+      }
+
+      const filename = `details_patents_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+      await Bun.write(filename, JSON.stringify(output, null, 2))
+      console.log(`\nSaved ${patents.length} patents to: ${filename}`)
+      return
+    }
+
+    const contacts = await getContactInfo(browser.page, baseProfileUrl)
     const output = {
       inputUrl,
       section,
-      count: patents.length,
-      patents,
+      count: contacts.length,
+      contacts,
     }
 
     if (shouldPrint) {
@@ -93,9 +127,9 @@ async function runExample() {
       return
     }
 
-    const filename = `details_patents_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+    const filename = `details_contact_info_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
     await Bun.write(filename, JSON.stringify(output, null, 2))
-    console.log(`\nSaved ${patents.length} patents to: ${filename}`)
+    console.log(`\nSaved ${contacts.length} contacts to: ${filename}`)
   } finally {
     await browser.close()
   }
