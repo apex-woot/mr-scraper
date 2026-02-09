@@ -62,6 +62,7 @@
     "test:fast": "bun test ./tests/auth.unit.test.ts ./tests/parsers/*.test.ts ./src/scrapers/person/*.test.ts",
     "test:ci": "bun test",
     "scrape": "bun run index.ts",
+    "scrape:summary": "bun run examples/scrape_summary.ts",
     "auth:save-cookie": "bun run examples/save_li_at_cookie.ts",
     "scrape:details": "bun run examples/scrape_details_section.ts",
     "scrape:education": "bun run examples/scrape_education_only.ts",
