@@ -44,6 +44,7 @@ await browser.start();
 bun install    # Setup
 bun test       # Run tests
 bun run build  # Build dist
+bun run scrape:summary -- "https://www.linkedin.com/in/sample-user/" --print
 ```
 
 ## Package Registry
@@ -90,6 +91,73 @@ bun run publish:infisical
 - `Text Extractors` pull normalized text/links from DOM elements.
 - `Parsers` convert extracted text into typed person models.
 - The orchestrator uses this pipeline for all person sections (top card, about, experience, education, patents, interests, accomplishments, contacts).
+
+## Person Support (Current)
+
+The `scrapePerson` flow currently supports these profile sections end-to-end:
+
+- Experience
+- Education
+- Patents
+- Publications (via the `accomplishments` section with `category: "publication"`)
+- Contact info
+
+All sections use best-effort extraction and may return partial results if a specific card is missing or fails to parse.
+
+## Parsed Fields By Section
+
+### Experience (`person.experiences[]`)
+
+- `company`
+- `companyUrl`
+- `positions[]`
+  - `title`
+  - `employmentType`
+  - `fromDate`
+  - `toDate`
+  - `duration`
+  - `location`
+  - `description`
+  - `plainText`
+- `plainText`
+
+### Education (`person.educations[]`)
+
+- `institutionName`
+- `degree`
+- `linkedinUrl`
+- `fromDate`
+- `toDate`
+- `description`
+- `plainText`
+
+### Patents (`person.patents[]`)
+
+- `title`
+- `issuer`
+- `number`
+- `issuedDate`
+- `url`
+- `description`
+- `plainText`
+
+### Publications (`person.accomplishments[]` filtered by `category === "publication"`)
+
+- `category`
+- `title`
+- `issuer`
+- `issuedDate`
+- `credentialId`
+- `credentialUrl`
+- `description`
+- `plainText`
+
+### Contact Info (`person.contacts[]`)
+
+- `type` (for example: `linkedin`, `website`, `email`, `phone`, `twitter`, `birthday`, `address`)
+- `value`
+- `label`
+- `plainText`
 
 ## Roadmap / TODO
 
