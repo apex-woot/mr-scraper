@@ -83,6 +83,7 @@ export const PersonSchema = z.object({
   }),
   name: z.string().optional(),
   headline: z.string().optional(),
+  currentPosition: z.string().optional(),
   origin: z.string().optional(),
   location: z.string().optional(),
   about: z.string().optional(),
@@ -96,6 +97,13 @@ export const PersonSchema = z.object({
 })
 
 export type PersonData = z.infer<typeof PersonSchema>
+
+export interface PersonProfileSummary {
+  name: string | null
+  currentPosition: string | null
+  currentBase: string | null
+  about: string | null
+}
 
 /**
  * Factory function to create and validate a Person data object
@@ -125,6 +133,18 @@ export function getPersonJobTitle(person: PersonData): string | undefined {
 }
 
 /**
+ * Returns a concise profile summary focused on top-card and about fields.
+ */
+export function getProfileSummary(person: PersonData): PersonProfileSummary {
+  return {
+    name: person.name ?? null,
+    currentPosition: person.currentPosition ?? person.headline ?? null,
+    currentBase: person.location ?? person.origin ?? null,
+    about: person.about ?? null,
+  }
+}
+
+/**
  * Convert PersonData to a formatted string representation
  * @param person - PersonData object
  * @returns Formatted string with person details
@@ -133,6 +153,7 @@ export function personToString(person: PersonData): string {
   return (
     `<Person ${person.name}\n` +
     `  Headline: ${person.headline}\n` +
+    `  Current Position: ${person.currentPosition}\n` +
     `  Origin: ${person.origin}\n` +
     `  Company: ${getPersonCompany(person)}\n` +
     `  Title: ${getPersonJobTitle(person)}\n` +

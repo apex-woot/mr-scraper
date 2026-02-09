@@ -4,10 +4,7 @@ export class AboutParser implements Parser<string> {
   readonly sectionName = 'about'
 
   parse(input: ParseInput): string | null {
-    const texts = input.texts
-      .map((text) => text.trim())
-      .filter(Boolean)
-      .filter((text) => text.toLowerCase() !== 'about')
+    const texts = normalizeAboutLines(input.texts)
 
     if (texts.length === 0) return null
 
@@ -17,4 +14,24 @@ export class AboutParser implements Parser<string> {
   validate(item: string): boolean {
     return item.length > 0
   }
+}
+
+function normalizeAboutLines(lines: string[]): string[] {
+  const deduped: string[] = []
+
+  for (const line of lines) {
+    const normalized = line
+      .replace(/\s+/g, ' ')
+      .replace(/\.\.\.\s*see more$/i, '')
+      .trim()
+    if (!normalized || isAboutNoiseLine(normalized)) continue
+    if (deduped[deduped.length - 1] !== normalized) deduped.push(normalized)
+  }
+
+  return deduped
+}
+
+function isAboutNoiseLine(line: string): boolean {
+  const lower = line.toLowerCase()
+  return lower === 'about' || lower === 'see more' || lower === 'see less' || lower === 'show more'
 }

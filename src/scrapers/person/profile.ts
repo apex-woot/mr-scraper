@@ -11,6 +11,7 @@ export interface TopCardProfileInfo {
   name: string
   location: string | null
   headline: string | null
+  currentPosition: string | null
   origin: string | null
 }
 
@@ -21,12 +22,13 @@ export async function getTopCardProfileInfo(page: Page): Promise<TopCardProfileI
     return {
       name: topCardInfo.name,
       location: topCardInfo.origin,
-      headline: topCardInfo.headline,
+      headline: topCardInfo.currentPosition,
+      currentPosition: topCardInfo.currentPosition,
       origin: topCardInfo.origin,
     }
   } catch (e) {
     log.warning(`Error getting name/location: ${e}`)
-    return { name: 'Unknown', location: null, headline: null, origin: null }
+    return { name: 'Unknown', location: null, headline: null, currentPosition: null, origin: null }
   }
 }
 

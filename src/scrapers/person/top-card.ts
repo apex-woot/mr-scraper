@@ -7,6 +7,7 @@ import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../.
 export interface TopCardPersonInfo {
   name: string
   headline: string | null
+  currentPosition: string | null
   origin: string | null
 }
 
@@ -28,6 +29,7 @@ export async function extractTopCardFromPage(page: Page): Promise<TopCardPersonI
   return {
     name: topCard?.name ?? 'Unknown',
     headline: topCard?.headline ?? null,
+    currentPosition: topCard?.currentPosition ?? null,
     origin: topCard?.origin ?? null,
   }
 }

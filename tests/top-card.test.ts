@@ -34,6 +34,7 @@ describeTopCard('Top card extractor', () => {
     expect(result).toEqual({
       name: 'Jordan Vale',
       headline: 'Product Research Lead',
+      currentPosition: 'Product Research Lead',
       origin: 'Riverton, Colorado, United States',
     })
   })
@@ -48,6 +49,7 @@ describeTopCard('Top card extractor', () => {
     expect(result).toEqual({
       name: 'Taylor Quinn',
       headline: 'builder. writer. operator.',
+      currentPosition: 'builder. writer. operator.',
       origin: 'Harbor City, Florida, United States',
     })
   })
@@ -67,6 +69,7 @@ describeTopCard('Top card extractor', () => {
     expect(result).toEqual({
       name: 'Alex Doe',
       headline: null,
+      currentPosition: null,
       origin: null,
     })
   })
@@ -92,6 +95,7 @@ describeTopCard('Top card extractor', () => {
     expect(result).toEqual({
       name: 'Alex Doe',
       headline: 'Founder',
+      currentPosition: 'Founder',
       origin: 'Austin, Texas, United States',
     })
   })

@@ -4,7 +4,7 @@ import { AboutParser, TopCardParser } from '../../src/extraction/parsers'
 describe('TopCardParser', () => {
   const parser = new TopCardParser()
 
-  test('parses name/headline/origin and strips contact info suffix', () => {
+  test('parses name/current position/origin and strips contact info suffix', () => {
     const parsed = parser.parse({
       texts: ['Alex Doe', 'Founder', 'Austin, Texas, United States Contact info'],
       links: [],
@@ -14,9 +14,31 @@ describe('TopCardParser', () => {
     expect(parsed).toEqual({
       name: 'Alex Doe',
       headline: 'Founder',
+      currentPosition: 'Founder',
       origin: 'Austin, Texas, United States',
     })
     expect(parser.validate(parsed!)).toBe(true)
+  })
+
+  test('ignores noise and keeps top-card ordering', () => {
+    const parsed = parser.parse({
+      texts: [
+        'Jordan Vale',
+        '500+ connections',
+        'Product Research Lead',
+        'Riverton, Colorado, United States',
+        'Message',
+      ],
+      links: [],
+      context: {},
+    })
+
+    expect(parsed).toEqual({
+      name: 'Jordan Vale',
+      headline: 'Product Research Lead',
+      currentPosition: 'Product Research Lead',
+      origin: 'Riverton, Colorado, United States',
+    })
   })
 })
 
@@ -32,5 +54,15 @@ describe('AboutParser', () => {
 
     expect(parsed).toBe('Building resilient data systems.\nMentoring teams.')
     expect(parser.validate(parsed!)).toBe(true)
+  })
+
+  test('removes see more noise from about text', () => {
+    const parsed = parser.parse({
+      texts: ['About', 'Designing reliable ETL pipelines... see more', 'See less'],
+      links: [],
+      context: {},
+    })
+
+    expect(parsed).toBe('Designing reliable ETL pipelines')
   })
 })

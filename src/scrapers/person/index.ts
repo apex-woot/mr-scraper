@@ -56,7 +56,7 @@ export async function scrapePerson(
     await page.waitForSelector('main', { timeout: 10000 })
     await waitAndFocus(page, 1)
 
-    const { name, location, headline, origin } = await getTopCardProfileInfo(page)
+    const { name, location, headline, currentPosition, origin } = await getTopCardProfileInfo(page)
     log.debug(`Got name: ${name}`)
 
     const openToWork = await checkOpenToWork(page)
@@ -92,6 +92,7 @@ export async function scrapePerson(
       name,
       location: origin ?? location ?? undefined,
       headline: headline ?? undefined,
+      currentPosition: currentPosition ?? undefined,
       origin: origin ?? undefined,
       about: about ?? undefined,
       openToWork,
