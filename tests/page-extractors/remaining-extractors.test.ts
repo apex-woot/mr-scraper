@@ -137,6 +137,11 @@ describeRemainingExtractors('Remaining page extractors', () => {
     }).extract({
       baseUrl: 'https://www.linkedin.com/in/test',
       page,
+      focusWait: 0,
+      scroll: {
+        pauseTime: 0,
+        maxScrolls: 2,
+      },
     })
 
     expect(result.kind).toBe('list')
