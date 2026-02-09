@@ -10,6 +10,7 @@ A high-performance LinkedIn person-profile scraper for **Bun + Node.js**. Built 
 - **Dual Runtime Support:** Optimized builds for both **Bun** and **Node.js** natively.
 - **Data Extraction:** LinkedIn person profiles.
 - **New Extraction Architecture:** `PageExtractor -> TextExtractor -> Parser` pipeline for resilient section parsing.
+- **Resume Export Automation:** Optionally click profile `More -> Save to PDF` and save generated resume locally.
 
 - **Type Safety:** Full TypeScript support with Zod-validated schemas.
 - **Session Management:** Persist authentication via `storageState` to bypass logins.
@@ -158,6 +159,24 @@ All sections use best-effort extraction and may return partial results if a spec
 - `value`
 - `label`
 - `plainText`
+
+### Generated Resume PDF
+
+- `person.resumeDownloadLink` is captured by default when the profile exposes `More -> Save to PDF`.
+- Enable file download in `scrapePerson` options with:
+
+```typescript
+const person = await scrapePerson(page, linkedinUrl, {
+  resume: {
+    enabled: true,
+    outputDir: './downloads',
+    // optional: fileName: 'sample-user-resume.pdf'
+  },
+})
+```
+
+- Result field: `person.resumePdfPath` (absolute path), or `undefined` when unavailable.
+- Link field: `person.resumeDownloadLink` (ephemeral download URL), or `undefined` when unavailable.
 
 ## Roadmap / TODO
 

@@ -16,6 +16,7 @@ async function runExample() {
   }
 
   const isHeadless = process.argv.includes('--headless')
+  const shouldDownloadResume = process.argv.includes('--download')
 
   const browser = new BrowserManager({
     headless: isHeadless,
@@ -37,6 +38,11 @@ async function runExample() {
 
     const person = await scrapePerson(browser.page, linkedinUrl, {
       domExtractors: PERSON_CORE_SECTIONS_CONFIG.domExtractors,
+      resume: shouldDownloadResume
+        ? {
+            enabled: true,
+          }
+        : undefined,
     })
 
     const output = {
@@ -48,6 +54,8 @@ async function runExample() {
       experience: person.experiences,
       patents: person.patents,
       publications: person.accomplishments.filter((item) => item.category === 'publication'),
+      resumePdfPath: person.resumePdfPath ?? null,
+      resumeDownloadLink: person.resumeDownloadLink ?? null,
     }
 
     console.log(JSON.stringify(output, null, 2))
