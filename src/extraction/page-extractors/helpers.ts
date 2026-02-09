@@ -44,11 +44,36 @@ export async function findItemsWithFallback(
   const registeredSelectors = selectorRegistry.getSection(sectionName)?.itemSelectors ?? []
 
   for (const selector of registeredSelectors) {
-    const locators = await scope.locator(selector).all()
+    const locators = await filterTopLevelMatches(scope, selector)
     if (locators.length > 0) return locators
   }
 
-  return await scope.locator('ul > li, ol > li').all()
+  return await filterTopLevelMatches(scope, 'ul > li, ol > li')
+}
+
+async function filterTopLevelMatches(scope: Locator, selector: string): Promise<Locator[]> {
+  const candidates = scope.locator(selector)
+  const count = await candidates.count()
+  const topLevel: Locator[] = []
+
+  for (let i = 0; i < count; i++) {
+    const candidate = candidates.nth(i)
+    const isNested = await candidate
+      .evaluate((node, cssSelector) => {
+        let parent = node.parentElement
+        while (parent) {
+          if (parent.matches(cssSelector)) return true
+          parent = parent.parentElement
+        }
+
+        return false
+      }, selector)
+      .catch(() => false)
+
+    if (!isNested) topLevel.push(candidate)
+  }
+
+  return topLevel
 }
 
 /** Try to find a section on the main profile page by heading text */
