@@ -15,10 +15,12 @@ import { getInterests } from './interests'
 import { getPatents } from './patents'
 import { checkOpenToWork, getAbout, getTopCardProfileInfo } from './profile'
 import { getPublications } from './publications'
+import { downloadResumePdf, type ResumeDownloadOptions } from './resume'
 
 export interface PersonScraperOptions {
   callback?: ProgressCallback
   domExtractors?: Partial<PersonDomExtractorToggles>
+  resume?: ResumeDownloadOptions
   sections?: {
     about?: boolean
     experiences?: boolean
@@ -104,6 +106,16 @@ export async function scrapePerson(
     const about = domExtractors.about ? await getAbout(page) : null
     if (domExtractors.about) log.debug('Got about section')
 
+    const resumeDownload = await downloadResumePdf(page, linkedinUrl, topCard.name, options?.resume)
+    if (resumeDownload) {
+      log.debug(`Captured generated resume download link: ${resumeDownload.resumeDownloadLink}`)
+      await callback?.onInfo(`Captured generated resume download link: ${resumeDownload.resumeDownloadLink}`)
+      if (resumeDownload.resumePdfPath) {
+        log.debug(`Downloaded generated resume PDF to: ${resumeDownload.resumePdfPath}`)
+        await callback?.onInfo(`Downloaded generated resume PDF to: ${resumeDownload.resumePdfPath}`)
+      }
+    }
+
     const publications = domExtractors.publications ? await getPublications(page, linkedinUrl) : []
     if (domExtractors.publications) log.debug(`Got ${publications.length} publications`)
 
@@ -150,6 +162,8 @@ export async function scrapePerson(
       interests,
       accomplishments: combinedAccomplishments,
       contacts,
+      resumePdfPath: resumeDownload?.resumePdfPath,
+      resumeDownloadLink: resumeDownload?.resumeDownloadLink,
     } as PersonData)
 
     log.debug('Scraping complete')
@@ -169,3 +183,4 @@ export {
   PersonDomExtractorToggleSchema,
   PersonScraperConfigSchema,
 } from './config'
+export type { ResumeDownloadOptions } from './resume'

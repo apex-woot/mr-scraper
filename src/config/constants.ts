@@ -60,4 +60,10 @@ export const COMMON_SELECTORS = {
   // Legacy list containers (fallback for older HTML structure)
   LEGACY_LIST_CONTAINER: '.pvs-list__container',
   LEGACY_LIST_ITEM: '.pvs-list__paged-list-item',
+
+  // Top-card action menu for profile-level actions
+  PROFILE_MORE_ACTIONS_TRIGGER:
+    'button[id$="-profile-overflow-action"], button[aria-label="More actions"], .artdeco-dropdown__trigger[aria-label*="More"]',
+  PROFILE_SAVE_TO_PDF_ACTION:
+    'div.artdeco-dropdown__item[role="button"][aria-label="Save to PDF"], [aria-label="Save to PDF"]',
 } as const

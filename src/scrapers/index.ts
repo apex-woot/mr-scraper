@@ -1,6 +1,11 @@
 // Functional scraper APIs
 
-export type { PersonDomExtractorToggles, PersonScraperConfig, PersonScraperOptions } from './person'
+export type {
+  PersonDomExtractorToggles,
+  PersonScraperConfig,
+  PersonScraperOptions,
+  ResumeDownloadOptions,
+} from './person'
 export {
   PERSON_CORE_SECTIONS_CONFIG,
   PersonDomExtractorToggleSchema,

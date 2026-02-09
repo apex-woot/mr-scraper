@@ -94,6 +94,8 @@ export const PersonSchema = z.object({
   interests: z.array(InterestSchema).default([]),
   accomplishments: z.array(AccomplishmentSchema).default([]),
   contacts: z.array(ContactSchema).default([]),
+  resumePdfPath: z.string().optional(),
+  resumeDownloadLink: z.string().optional(),
 })
 
 export type PersonData = z.infer<typeof PersonSchema>
