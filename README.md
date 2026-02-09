@@ -1,6 +1,5 @@
 # @apexwoot/mr-scraper
 
-[![npm version](https://img.shields.io/npm/v/@apexwoot/mr-scraper.svg)](https://www.npmjs.com/package/@apexwoot/mr-scraper)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
@@ -45,6 +44,44 @@ await browser.start();
 bun install    # Setup
 bun test       # Run tests
 bun run build  # Build dist
+```
+
+## Package Registry
+
+This package is published to GitHub Packages (private registry).
+
+Add this to your user/project `.npmrc` before installing:
+
+```ini
+@apexwoot:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
+always-auth=true
+```
+
+## Infisical Integration
+
+This repo can pull runtime secrets from Infisical using the configured project ID `7b57b769-9557-4449-9d88-261cd09a31c2`.
+
+1. Install and authenticate Infisical CLI.
+2. Set optional runtime selectors:
+
+```bash
+export INFISICAL_ENV=production
+export INFISICAL_PATH=/
+```
+
+`INFISICAL_ENV` defaults to `production` in this repo.
+
+3. Run scraper commands with Infisical-injected env vars:
+
+```bash
+bun run scrape:details:infisical -- "https://www.linkedin.com/in/sample-user/overlay/contact-info/" --print
+```
+
+4. Publish package with Infisical-injected registry token:
+
+```bash
+bun run publish:infisical
 ```
 
 ## Architecture

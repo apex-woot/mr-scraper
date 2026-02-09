@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Publish to GitHub Packages
 
 on:
   release:
@@ -10,7 +10,7 @@ jobs:
     environment: prod
     permissions:
       contents: read
-      id-token: write
+      packages: write
 
     steps:
       - name: Checkout code
@@ -27,7 +27,7 @@ jobs:
       - name: Run linter
         run: bun run lint
 
-      - name: Publish to npm
-        run: bun publish --access public
+      - name: Publish to GitHub Packages
+        run: bun publish --registry https://npm.pkg.github.com --access restricted
         env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.GITHUB_TOKEN }}

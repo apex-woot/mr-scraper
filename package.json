@@ -32,7 +32,8 @@
     "url": "git+https://github.com/apex-woot/mr-scraper.git"
   },
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   },
   "bugs": {
     "url": "https://github.com/apex-woot/mr-scraper/issues"
@@ -64,6 +65,7 @@
     "scrape:details": "bun run examples/scrape_details_section.ts",
     "scrape:education": "bun run examples/scrape_education_only.ts",
     "scrape:publications": "bun run examples/scrape_publications_only.ts",
+    "env:fetch": "infisical export --projectId=7b57b769-9557-4449-9d88-261cd09a31c2 --env=prod --path=/ > .env",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
