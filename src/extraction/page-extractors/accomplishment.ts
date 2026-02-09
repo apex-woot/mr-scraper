@@ -1,4 +1,5 @@
-import { findItemsWithFallback, navigateToSection, sectionHasContent } from './helpers'
+import { SCRAPING_CONSTANTS } from '../../config/constants'
+import { findItemsWithFallback, navigateToSection, scrollSection, sectionHasContent } from './helpers'
 import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
 export interface AccomplishmentPageExtractorOptions {
@@ -22,13 +23,18 @@ export class AccomplishmentPageExtractor implements PageExtractor {
       config.page,
       config.baseUrl,
       `details/${this.urlPath}/`,
-      config.focusWait ?? 1,
+      config.focusWait ?? SCRAPING_CONSTANTS.ACCOMPLISHMENTS_FOCUS_WAIT,
     )
 
     if (!didNavigate) return { kind: 'list', items: [] }
 
     const hasContent = await sectionHasContent(config.page)
     if (!hasContent) return { kind: 'list', items: [] }
+
+    await scrollSection(config.page, {
+      pauseTime: config.scroll?.pauseTime ?? SCRAPING_CONSTANTS.ACCOMPLISHMENTS_SCROLL_PAUSE,
+      maxScrolls: config.scroll?.maxScrolls ?? SCRAPING_CONSTANTS.ACCOMPLISHMENTS_MAX_SCROLLS,
+    })
 
     const items = await findItemsWithFallback(config.page, this.sectionName)
     return {
