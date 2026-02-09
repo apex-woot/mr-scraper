@@ -1,6 +1,12 @@
 import type { Experience, Position } from '../../models/person'
 import { isDateLine, isDescriptionLike, isLocationLike, parseDateRange, toPlainText } from '../../scrapers/person/utils'
 import type { ExtractedLink } from '../text-extractors'
+import {
+  detectExperienceLayout,
+  isLikelyCompanyName,
+  parseGroupedPositions,
+  sanitizeCompanyCandidate,
+} from './experience-ir'
 import type { ParseInput, Parser } from './types'
 
 export class ExperienceParser implements Parser<Experience> {
@@ -11,7 +17,7 @@ export class ExperienceParser implements Parser<Experience> {
     if (texts.length === 0) return null
 
     if (input.subItems && input.subItems.length > 0) {
-      const company = texts[0] ?? undefined
+      const company = sanitizeCompanyCandidate(texts[0])
       const positions = input.subItems
         .map((subItem) => parsePosition(subItem.texts))
         .filter((position): position is Position => !!position)
@@ -24,6 +30,11 @@ export class ExperienceParser implements Parser<Experience> {
         plainText: toPlainText(input.texts),
         positions,
       }
+    }
+
+    if (detectExperienceLayout(texts) === 'grouped') {
+      const grouped = parseGroupedExperience(texts, input.links)
+      if (grouped && this.validate(grouped)) return grouped
     }
 
     const parsed = parseSingleExperience(texts, input.links)
@@ -42,8 +53,25 @@ export class ExperienceParser implements Parser<Experience> {
 
     const primary = item.positions[0]
     const hasPositionSignal = !!primary?.title || !!primary?.fromDate || !!primary?.location || !!primary?.description
+    const hasInvalidCompany = !!item.company && !isLikelyCompanyName(item.company)
+    if (hasInvalidCompany) return false
 
     return !!item.company || hasPositionSignal
+  }
+}
+
+function parseGroupedExperience(texts: string[], links: ExtractedLink[]): Experience | null {
+  const company = sanitizeCompanyCandidate(texts[0])
+  if (!company) return null
+
+  const positions = parseGroupedPositions(texts)
+  if (positions.length === 0) return null
+
+  return {
+    company,
+    companyUrl: links[0]?.url,
+    plainText: toPlainText(texts),
+    positions,
   }
 }
 
@@ -55,12 +83,12 @@ function parseSingleExperience(
   if (!title) return null
 
   const second = texts[1] ?? ''
-  let company = second || undefined
+  let company = sanitizeCompanyCandidate(second)
   let employmentType: string | undefined
 
   if (second.includes(' · ') && !isDateLine(second)) {
     const parts = second.split(' · ').map((part) => part.trim())
-    company = parts[0] || undefined
+    company = sanitizeCompanyCandidate(parts[0])
     employmentType = parts[1] || undefined
   }
 
@@ -78,7 +106,7 @@ function parseSingleExperience(
   }
 
   return {
-    company: company || links[0]?.text || undefined,
+    company: company || sanitizeCompanyCandidate(links[0]?.text) || undefined,
     position,
   }
 }
