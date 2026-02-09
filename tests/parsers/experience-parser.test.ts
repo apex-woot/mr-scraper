@@ -46,4 +46,40 @@ describe('ExperienceParser', () => {
     expect(parsed?.positions[0]?.title).toBe('Staff Engineer')
     expect(parser.validate(parsed!)).toBe(true)
   })
+
+  test('parses grouped-company experience from flattened detail text', () => {
+    const parsed = parser.parse({
+      texts: [
+        'Example Labs',
+        '12 yrs 3 mos',
+        'Principal Engineer - Embedded Systems',
+        'Full-time',
+        '2023 - Present · 3 yrs',
+        'On-site',
+        'Senior Mechanical Engineer - Innovation',
+        '2014 - 2023 · 9 yrs',
+        'Raleigh, North Carolina, United States',
+      ],
+      links: [{ url: 'https://www.linkedin.com/company/example-labs/', text: 'Example Labs', isExternal: false }],
+      context: {},
+    })
+
+    expect(parsed).not.toBeNull()
+    expect(parsed?.company).toBe('Example Labs')
+    expect(parsed?.positions.length).toBe(2)
+    expect(parsed?.positions[0]?.title).toContain('Embedded Systems')
+    expect(parsed?.positions[1]?.title).toContain('Mechanical Engineer')
+  })
+
+  test('rejects meta tokens as company name', () => {
+    const parsed = parser.parse({
+      texts: ['Senior Engineer', 'Full-time', '2023 - Present · 3 yrs', 'On-site'],
+      links: [{ url: 'https://www.linkedin.com/company/example-company/', text: 'Full-time', isExternal: false }],
+      context: {},
+    })
+
+    expect(parsed).not.toBeNull()
+    expect(parsed?.company).toBeUndefined()
+    expect(parser.validate(parsed!)).toBe(true)
+  })
 })
