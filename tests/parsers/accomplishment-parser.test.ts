@@ -18,6 +18,19 @@ describe('AccomplishmentParser', () => {
     expect(parsed?.issuedDate).toBe('Jan 2024')
     expect(parsed?.credentialId).toBe('ABC-123')
     expect(parsed?.credentialUrl).toBe('https://example.test/verify')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parsed accomplishment')
+    expect(parser.validate(parsed)).toBe(true)
+  })
+
+  test('splits issuer and date when combined in publication metadata', () => {
+    const parsed = parser.parse({
+      texts: ['Example Publication Title', 'Example Conference · Dec 11, 2024'],
+      links: [],
+      context: { category: 'publication' },
+    })
+
+    expect(parsed).not.toBeNull()
+    expect(parsed?.issuer).toBe('Example Conference')
+    expect(parsed?.issuedDate).toBe('Dec 11, 2024')
   })
 })

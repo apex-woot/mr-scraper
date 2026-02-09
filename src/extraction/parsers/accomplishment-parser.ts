@@ -35,6 +35,13 @@ export class AccomplishmentParser implements Parser<Accomplishment> {
         continue
       }
 
+      const parsedIssuerAndDate = parseIssuerAndDate(text)
+      if (parsedIssuerAndDate) {
+        issuer = parsedIssuerAndDate.issuer || issuer
+        issuedDate = parsedIssuerAndDate.issuedDate || issuedDate
+        continue
+      }
+
       if (!issuer) {
         issuer = text
         continue
@@ -75,4 +82,26 @@ function looksLikeDate(text: string): boolean {
 
 function looksLikeDescription(text: string): boolean {
   return text.split(/\s+/).length > 8 || text.length > 80
+}
+
+function parseIssuerAndDate(text: string): { issuer?: string; issuedDate?: string } | null {
+  if (!text.includes('·')) return null
+
+  const parts = text
+    .split('·')
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (parts.length < 2) return null
+
+  const candidateDate = parts[parts.length - 1]
+  if (!candidateDate || !looksLikeDate(candidateDate)) return null
+
+  const issuer = parts.slice(0, -1).join(' · ').trim()
+  if (!issuer) return null
+
+  return {
+    issuer,
+    issuedDate: candidateDate,
+  }
 }
