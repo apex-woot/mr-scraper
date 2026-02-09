@@ -81,5 +81,11 @@ function isLikelyLocationLine(line: string): boolean {
   if (lower.includes(' at ') || lower.includes('currently')) return false
   if (lower.includes('open to work') || lower.includes('connection') || lower.includes('follower')) return false
 
+  const rolePrefixPattern = /^(vp|svp|evp|cxo|ceo|cto|coo|cfo|director|manager|engineer|founder|partner|head|lead)\b/i
+  if (rolePrefixPattern.test(line.trim())) return false
+
+  const firstSegment = line.split(',')[0]?.trim() ?? ''
+  if (/^[A-Z]{2,4}$/.test(firstSegment)) return false
+
   return line.includes(',') || /\b(area|region)\b/i.test(line)
 }
