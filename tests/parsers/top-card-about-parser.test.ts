@@ -17,7 +17,9 @@ describe('TopCardParser', () => {
       currentPosition: 'Founder',
       origin: 'Austin, Texas, United States',
     })
-    expect(parser.validate(parsed!)).toBe(true)
+    expect(parsed).not.toBeNull()
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 
   test('ignores noise and keeps top-card ordering', () => {
@@ -99,7 +101,9 @@ describe('AboutParser', () => {
     })
 
     expect(parsed).toBe('Building resilient data systems.\nMentoring teams.')
-    expect(parser.validate(parsed!)).toBe(true)
+    expect(parsed).toBeDefined()
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 
   test('removes see more noise from about text', () => {

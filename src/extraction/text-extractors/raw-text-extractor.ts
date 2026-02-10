@@ -6,9 +6,9 @@ export class RawTextExtractor implements TextExtractor {
   readonly name = 'raw-text'
   readonly priority = 3
 
-  async canHandle(element: Locator): Promise<boolean> {
-    const text = await element.innerText().catch(() => '')
-    return text.trim().length > 0
+  async canHandle(_element: Locator): Promise<boolean> {
+    // Avoid duplicate innerText() calls; extract() will return null when empty.
+    return true
   }
 
   async extract(element: Locator): Promise<ExtractedText | null> {

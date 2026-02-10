@@ -27,6 +27,7 @@ describe('PatentParser', () => {
     expect(parsed?.number).toBe('US10424882B2')
     expect(parsed?.issuedDate).toBe('Sep 24, 2019')
     expect(parsed?.url).toBe('https://patents.example.test/abc')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 })

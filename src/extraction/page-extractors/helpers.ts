@@ -53,26 +53,34 @@ export async function findItemsWithFallback(
 
 async function filterTopLevelMatches(scope: Locator, selector: string): Promise<Locator[]> {
   const candidates = scope.locator(selector)
-  const count = await candidates.count()
-  const topLevel: Locator[] = []
 
-  for (let i = 0; i < count; i++) {
-    const candidate = candidates.nth(i)
-    const isNested = await candidate
-      .evaluate((node, cssSelector) => {
+  const topLevelIndexes = await candidates
+    .evaluateAll((nodes, cssSelector) => {
+      const out: number[] = []
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i]
+        if (!(node instanceof Element)) continue
+
         let parent = node.parentElement
+        let isNested = false
         while (parent) {
-          if (parent.matches(cssSelector)) return true
+          if (parent.matches(cssSelector)) {
+            isNested = true
+            break
+          }
           parent = parent.parentElement
         }
 
-        return false
-      }, selector)
-      .catch(() => false)
+        if (!isNested) out.push(i)
+      }
 
-    if (!isNested) topLevel.push(candidate)
-  }
+      return out
+    }, selector)
+    .catch((): number[] => [])
 
+  const topLevel: Locator[] = []
+  for (const idx of topLevelIndexes) topLevel.push(candidates.nth(idx))
   return topLevel
 }
 

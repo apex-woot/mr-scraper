@@ -7,31 +7,70 @@ import { log } from '../../utils/logger'
  * Useful for filtering out duplicate hidden text (e.g. accessibility labels).
  */
 export async function extractUniqueTextsFromElement(element: Locator): Promise<string[]> {
-  let textElements = await element.locator('span[aria-hidden="true"], div > span').all()
+  let rawTexts = await element
+    .locator('span[aria-hidden="true"], div > span')
+    .allTextContents()
+    .catch((): string[] => [])
 
-  if (textElements.length === 0) textElements = await element.locator('span, div').all()
+  if (rawTexts.length === 0) {
+    rawTexts = await element
+      .locator('span, div')
+      .allTextContents()
+      .catch((): string[] => [])
+  }
 
-  const seenTexts = new Set<string>()
+  const exactSeen = new Set<string>()
+  const tokenIndex = new Map<string, string[]>()
   const uniqueTexts: string[] = []
 
-  for (const el of textElements) {
-    const text = await el.textContent()
-    if (text?.trim()) {
-      const trimmed = text.trim()
-      if (
-        !seenTexts.has(trimmed) &&
-        trimmed.length < 200 &&
-        !Array.from(seenTexts).some(
-          (t) => (t.length > 3 && trimmed.includes(t)) || (trimmed.length > 3 && t.includes(trimmed)),
-        )
-      ) {
-        seenTexts.add(trimmed)
-        uniqueTexts.push(trimmed)
+  for (const rawText of rawTexts) {
+    const trimmed = rawText.trim()
+    if (!trimmed) continue
+    if (trimmed.length >= 200) continue
+    if (exactSeen.has(trimmed)) continue
+
+    const keys = buildSubstringKeys(trimmed)
+    const candidates = new Set<string>()
+    for (const key of keys) {
+      const bucket = tokenIndex.get(key)
+      if (!bucket) continue
+      for (const existing of bucket) candidates.add(existing)
+    }
+
+    let isSubstringRelated = false
+    for (const existing of candidates) {
+      if ((existing.length > 3 && trimmed.includes(existing)) || (trimmed.length > 3 && existing.includes(trimmed))) {
+        isSubstringRelated = true
+        break
       }
+    }
+
+    if (isSubstringRelated) continue
+
+    exactSeen.add(trimmed)
+    uniqueTexts.push(trimmed)
+    for (const key of keys) {
+      const bucket = tokenIndex.get(key)
+      if (bucket) bucket.push(trimmed)
+      else tokenIndex.set(key, [trimmed])
     }
   }
 
   return uniqueTexts
+}
+
+function buildSubstringKeys(text: string): string[] {
+  const lower = text.toLowerCase()
+  const keys = new Set<string>()
+
+  for (const token of lower.split(/\s+/)) {
+    const t = token.replace(/[^a-z0-9]/g, '')
+    if (t.length >= 4) keys.add(t)
+    if (keys.size >= 6) break
+  }
+
+  if (keys.size === 0) keys.add(lower.slice(0, 8))
+  return [...keys]
 }
 
 export interface DateParseResult {

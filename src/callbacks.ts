@@ -3,7 +3,7 @@ import { log as logger } from './utils/logger'
 
 export interface ProgressCallback {
   onStart(type: string, url: string): Promise<void> | void
-  onComplete(type: string, data: any): Promise<void> | void
+  onComplete(type: string, data: unknown): Promise<void> | void
   onInfo(message: string): Promise<void> | void
   onWarning(message: string): Promise<void> | void
   onError(message: string, error?: Error): Promise<void> | void
@@ -16,7 +16,7 @@ export interface ProgressCallback {
 export function createSilentCallback(): ProgressCallback {
   return {
     onStart: (_type: string, _url: string) => {},
-    onComplete: (_type: string, _data: any) => {},
+    onComplete: (_type: string, _data: unknown) => {},
     onInfo: (_message: string) => {},
     onWarning: (_message: string) => {},
     onError: (_message: string, _error?: Error) => {},
@@ -32,7 +32,7 @@ export function createConsoleCallback(): ProgressCallback {
     onStart: (type: string, url: string) => {
       logger.info(`Starting ${type} scraping: ${url}`)
     },
-    onComplete: (type: string, _data: any) => {
+    onComplete: (type: string, _data: unknown) => {
       logger.success(`Completed ${type} scraping successfully`)
     },
     onInfo: (message: string) => {
@@ -53,7 +53,7 @@ export function createConsoleCallback(): ProgressCallback {
  * @returns ProgressCallback that writes JSON logs
  */
 export function createJSONLogCallback(logFile: string): ProgressCallback {
-  async function logToFile(eventType: string, data: any): Promise<void> {
+  async function logToFile(eventType: string, data: Record<string, unknown>): Promise<void> {
     const entry = {
       timestamp: new Date().toISOString(),
       event_type: eventType,
@@ -71,7 +71,7 @@ export function createJSONLogCallback(logFile: string): ProgressCallback {
     onStart: async (type: string, url: string) => {
       await logToFile('start', { scraper_type: type, url })
     },
-    onComplete: async (type: string, _data: any) => {
+    onComplete: async (type: string, _data: unknown) => {
       await logToFile('complete', { scraper_type: type })
     },
     onInfo: async (message: string) => {
@@ -100,7 +100,7 @@ export function createMultiCallback(...callbacks: ProgressCallback[]): ProgressC
     onStart: async (type: string, url: string) => {
       await Promise.all(callbacks.map((c) => c.onStart(type, url)))
     },
-    onComplete: async (type: string, data: any) => {
+    onComplete: async (type: string, data: unknown) => {
       await Promise.all(callbacks.map((c) => c.onComplete(type, data)))
     },
     onInfo: async (message: string) => {

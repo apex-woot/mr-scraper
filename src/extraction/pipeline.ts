@@ -29,6 +29,7 @@ export interface PipelineConfig<T> {
   confidenceThreshold?: number
   deduplicateKey?: (item: T) => string
   captureHtmlOnFailure?: boolean
+  listConcurrency?: number
 }
 
 export class ExtractionPipeline<T> {
@@ -106,28 +107,62 @@ export class ExtractionPipeline<T> {
     const items: T[] = []
     let totalConfidence = 0
 
-    for (const { locator, context } of taggedLocators) {
-      const extracted = await this.extractText(locator, diagnostics)
-      if (!extracted) {
-        diagnostics.itemsFailed++
-        continue
-      }
+    const concurrency = clampInt(this.config.listConcurrency ?? 4, 1, 8)
 
-      const parsed = this.config.parser.parse({
-        texts: extracted.texts,
-        links: extracted.links,
-        subItems: extracted.subItems?.map((subItem) => ({
-          texts: subItem.texts,
-          links: subItem.links,
-          context,
-        })),
-        context,
-      })
+    type ListResult = {
+      parsed: T | null
+      confidence: number
+    }
 
-      if (parsed && this.config.parser.validate(parsed)) {
-        items.push(parsed)
+    const results: Array<ListResult | null> = new Array(taggedLocators.length).fill(null)
+    let nextIndex = 0
+
+    const workers: Array<Promise<void>> = []
+    for (let w = 0; w < Math.min(concurrency, taggedLocators.length); w++) {
+      workers.push(
+        (async () => {
+          while (nextIndex < taggedLocators.length) {
+            const i = nextIndex
+            nextIndex++
+
+            const entry = taggedLocators[i]
+            if (!entry) continue
+
+            const { locator, context } = entry
+            const extracted = await this.extractText(locator, diagnostics)
+            if (!extracted) {
+              results[i] = { parsed: null, confidence: 0 }
+              continue
+            }
+
+            const parsed = this.config.parser.parse({
+              texts: extracted.texts,
+              links: extracted.links,
+              subItems: extracted.subItems?.map((subItem) => ({
+                texts: subItem.texts,
+                links: subItem.links,
+                context,
+              })),
+              context,
+            })
+
+            if (parsed && this.config.parser.validate(parsed)) {
+              results[i] = { parsed, confidence: extracted.confidence }
+            } else {
+              results[i] = { parsed: null, confidence: 0 }
+            }
+          }
+        })(),
+      )
+    }
+
+    await Promise.all(workers)
+
+    for (const result of results) {
+      if (result?.parsed) {
+        items.push(result.parsed)
         diagnostics.itemsParsed++
-        totalConfidence += extracted.confidence
+        totalConfidence += result.confidence
       } else {
         diagnostics.itemsFailed++
       }
@@ -240,4 +275,12 @@ function addAttempt(attempts: string[], name: string): void {
 
 function hasParseRaw<T>(parser: Parser<T>): parser is RawParser<T> {
   return 'parseRaw' in parser && typeof parser.parseRaw === 'function'
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min
+  const v = Math.trunc(value)
+  if (v < min) return min
+  if (v > max) return max
+  return v
 }

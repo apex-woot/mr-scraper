@@ -7,24 +7,36 @@ export async function retryAsync<T>(
   options: {
     maxAttempts?: number
     backoff?: number
-    exceptions?: Array<new (...args: any[]) => Error>
+    exceptions?: Array<new (...args: unknown[]) => Error>
+    logLevel?: 'debug' | 'warning' | 'silent'
+    jitterRatio?: number
   } = {},
 ): Promise<T> {
-  const { maxAttempts = 3, backoff = 2, exceptions = [Error] } = options
+  const { maxAttempts = 3, backoff = 2, exceptions = [Error], logLevel = 'warning', jitterRatio = 0.25 } = options
 
   let lastException: Error | null = null
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn()
-    } catch (e: any) {
-      lastException = e
-      const shouldRetry = exceptions.some((exc) => e instanceof exc)
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      lastException = err
+      const shouldRetry = e instanceof Error && exceptions.some((exc) => e instanceof exc)
 
       if (shouldRetry && attempt < maxAttempts - 1) {
-        const waitTime = backoff ** attempt
-        log.warning(`Attempt ${attempt + 1}/${maxAttempts} failed: ${e.message}. ` + `Retrying in ${waitTime}s...`)
-        await new Promise((resolve) => setTimeout(resolve, waitTime * 1000))
+        const baseWaitSeconds = backoff ** attempt
+        const jitter = Math.max(0, Math.min(1, jitterRatio))
+        const multiplier = jitter > 0 ? 1 + (Math.random() * 2 - 1) * jitter : 1
+        const waitSeconds = Math.max(0, baseWaitSeconds * multiplier)
+
+        if (logLevel !== 'silent') {
+          const msg = `Attempt ${attempt + 1}/${maxAttempts} failed: ${err.message}. Retrying in ${waitSeconds.toFixed(2)}s...`
+          if (logLevel === 'warning') log.warning(msg)
+          else log.debug(msg)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
       } else {
         break
       }
@@ -130,15 +142,34 @@ export async function scrollToBottom(page: Page, pauseTime: number = 1.0, maxScr
   const stabilityThreshold = 2
 
   for (let i = 0; i < cappedMaxScrolls; i++) {
-    const scrollStats = await page.evaluate(() => {
-      function findScrollableElement(): Element | Window {
-        if (
-          document.documentElement.scrollHeight > window.innerHeight ||
-          document.body.scrollHeight > window.innerHeight
-        ) {
-          return window
+    const before = await page.evaluate(() => {
+      type Target = Window | Element
+      type State = {
+        target: Target
+        isWindow: boolean
+      }
+
+      const w = window as unknown as { __mrScrollState?: State }
+
+      function pickScrollableTarget(): Target {
+        const scrollingElement = document.scrollingElement ?? document.documentElement
+        if (scrollingElement && scrollingElement.scrollHeight > scrollingElement.clientHeight) return window
+
+        const likely = [
+          document.querySelector('main'),
+          document.querySelector('[role="main"]'),
+          document.querySelector('.scaffold-layout__main'),
+          document.querySelector('.application-outlet'),
+        ].filter(Boolean) as Element[]
+
+        for (const el of likely) {
+          const style = window.getComputedStyle(el)
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+            return el
+          }
         }
 
+        // Last resort: scan for the best scroll container.
         const allElements = Array.from(document.querySelectorAll('*'))
         let bestCandidate: Element | null = null
         let maxScrollHeight = 0
@@ -153,73 +184,84 @@ export async function scrollToBottom(page: Page, pauseTime: number = 1.0, maxScr
           }
         }
 
-        return bestCandidate || window
+        return bestCandidate ?? window
       }
 
-      const target = findScrollableElement()
-      const isWindow = target === window
+      const existing = w.__mrScrollState
+      if (existing) {
+        if (existing.isWindow) {
+          // Still fine.
+        } else {
+          const el = existing.target as Element
+          if (!document.contains(el) || el.scrollHeight <= el.clientHeight) {
+            w.__mrScrollState = undefined
+          }
+        }
+      }
 
-      const currentScrollHeight = isWindow ? document.documentElement.scrollHeight : (target as Element).scrollHeight
+      if (!w.__mrScrollState) {
+        const target = pickScrollableTarget()
+        w.__mrScrollState = { target, isWindow: target === window }
+      }
 
-      if (isWindow) window.scrollTo(0, document.documentElement.scrollHeight)
+      const state = w.__mrScrollState
+      const currentScrollHeight = state.isWindow
+        ? (document.scrollingElement ?? document.documentElement).scrollHeight
+        : (state.target as Element).scrollHeight
+
+      if (state.isWindow) window.scrollTo(0, currentScrollHeight)
       else {
-        const el = target as Element
+        const el = state.target as Element
         el.scrollTop = el.scrollHeight
       }
 
       return {
         scrollHeight: currentScrollHeight,
-        tagName: isWindow ? 'WINDOW' : (target as Element).tagName,
+        tagName: state.isWindow ? 'WINDOW' : (state.target as Element).tagName,
       }
     })
 
     await page.mouse.wheel(0, 3000)
     await new Promise((resolve) => setTimeout(resolve, pauseTime * 1000))
 
-    const newStats = await page.evaluate(() => {
-      function findScrollableElement(): Element | Window {
-        if (
-          document.documentElement.scrollHeight > window.innerHeight ||
-          document.body.scrollHeight > window.innerHeight
-        ) {
-          return window
-        }
-
-        const allElements = Array.from(document.querySelectorAll('*'))
-        let bestCandidate: Element | null = null
-        let maxScrollHeight = 0
-
-        for (const el of allElements) {
-          const style = window.getComputedStyle(el)
-          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
-            if (el.scrollHeight > maxScrollHeight) {
-              maxScrollHeight = el.scrollHeight
-              bestCandidate = el
-            }
-          }
-        }
-
-        return bestCandidate || window
+    const after = await page.evaluate(() => {
+      type Target = Window | Element
+      type State = {
+        target: Target
+        isWindow: boolean
       }
 
-      const target = findScrollableElement()
-      const isWindow = target === window
+      const w = window as unknown as { __mrScrollState?: State }
+      const state = w.__mrScrollState
+      if (!state) {
+        return {
+          scrollHeight: (document.scrollingElement ?? document.documentElement).scrollHeight,
+          scrollTop: window.scrollY,
+        }
+      }
 
+      if (state.isWindow) {
+        return {
+          scrollHeight: (document.scrollingElement ?? document.documentElement).scrollHeight,
+          scrollTop: window.scrollY,
+        }
+      }
+
+      const el = state.target as Element
       return {
-        scrollHeight: isWindow ? document.documentElement.scrollHeight : (target as Element).scrollHeight,
-        scrollTop: isWindow ? window.scrollY : (target as Element).scrollTop,
+        scrollHeight: el.scrollHeight,
+        scrollTop: el.scrollTop,
       }
     })
 
-    const heightDidNotChange = newStats.scrollHeight === scrollStats.scrollHeight
-
-    log.info(
-      `Scroll ${i + 1}/${cappedMaxScrolls}: Position=${Math.round(newStats.scrollTop)}, Total Height=${newStats.scrollHeight}`,
+    const heightDidNotChange = after.scrollHeight === before.scrollHeight
+    log.debug(
+      `Scroll ${i + 1}/${cappedMaxScrolls} (${before.tagName}): Position=${Math.round(after.scrollTop)}, Total Height=${after.scrollHeight}`,
     )
 
     if (heightDidNotChange) {
       stableCount++
-      log.debug(`Height stable (${newStats.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`)
+      log.debug(`Height stable (${after.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`)
     } else {
       stableCount = 0
     }

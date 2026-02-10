@@ -7,22 +7,19 @@ export class SemanticTextExtractor implements TextExtractor {
   readonly name = 'semantic'
   readonly priority = 1
 
-  async canHandle(element: Locator): Promise<boolean> {
-    const count = await element
-      .locator('h1, h2, h3, h4, h5, h6, p, span')
-      .count()
-      .catch(() => 0)
-    return count > 0
+  async canHandle(_element: Locator): Promise<boolean> {
+    // Avoid an extra round-trip (extract() will cheaply return null when empty).
+    return true
   }
 
   async extract(element: Locator): Promise<ExtractedText | null> {
     try {
-      const texts = await extractSemanticTexts(element)
+      const [texts, links] = await Promise.all([extractSemanticTexts(element), extractLinksFromElement(element)])
       if (texts.length === 0) return null
 
       return {
         texts,
-        links: await extractLinksFromElement(element),
+        links,
         confidence: computeConfidence(texts),
       }
     } catch (e) {
@@ -33,23 +30,18 @@ export class SemanticTextExtractor implements TextExtractor {
 }
 
 async function extractSemanticTexts(element: Locator): Promise<string[]> {
-  const rawTexts: string[] = []
-
-  const primaryNodes = await element.locator('h1, h2, h3, h4, h5, h6, p, .text-body-medium, .text-body-small').all()
-  for (const node of primaryNodes) {
-    const text = await node.textContent()
-    if (text) rawTexts.push(text)
-  }
+  const rawTexts = await element
+    .locator('h1, h2, h3, h4, h5, h6, p, .text-body-medium, .text-body-small')
+    .allTextContents()
+    .catch((): string[] => [])
 
   let deduped = deduplicateTexts(rawTexts)
   if (deduped.length >= 2) return deduped
 
-  const spans = await element.locator('span').all()
-  const spanTexts: string[] = []
-  for (const span of spans) {
-    const text = await span.textContent()
-    if (text) spanTexts.push(text)
-  }
+  const spanTexts = await element
+    .locator('span')
+    .allTextContents()
+    .catch((): string[] => [])
 
   deduped = deduplicateTexts([...rawTexts, ...spanTexts])
   return deduped.filter((text) => text.length > 1)

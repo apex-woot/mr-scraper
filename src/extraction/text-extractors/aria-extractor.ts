@@ -7,12 +7,9 @@ export class AriaTextExtractor implements TextExtractor {
   readonly name = 'aria'
   readonly priority = 0
 
-  async canHandle(element: Locator): Promise<boolean> {
-    const count = await element
-      .locator('span[aria-hidden="true"]')
-      .count()
-      .catch(() => 0)
-    return count > 0
+  async canHandle(_element: Locator): Promise<boolean> {
+    // Avoid an extra round-trip (extract() will cheaply return null when empty).
+    return true
   }
 
   async extract(element: Locator): Promise<ExtractedText | null> {
@@ -20,8 +17,10 @@ export class AriaTextExtractor implements TextExtractor {
       const texts = await extractAriaTexts(element)
       if (texts.length === 0) return null
 
-      const links = await extractLinksFromElement(element)
-      const subItems = await detectSubItems(element, extractAriaTexts)
+      const [links, subItems] = await Promise.all([
+        extractLinksFromElement(element),
+        detectSubItems(element, extractAriaTexts),
+      ])
 
       return {
         texts,
@@ -37,14 +36,10 @@ export class AriaTextExtractor implements TextExtractor {
 }
 
 async function extractAriaTexts(element: Locator): Promise<string[]> {
-  const spans = await element.locator('span[aria-hidden="true"]').all()
-  const rawTexts: string[] = []
-
-  for (const span of spans) {
-    const text = await span.textContent().catch(() => null)
-    if (text) rawTexts.push(text)
-  }
-
+  const rawTexts = await element
+    .locator('span[aria-hidden="true"]')
+    .allTextContents()
+    .catch((): string[] => [])
   return deduplicateTexts(rawTexts)
 }
 

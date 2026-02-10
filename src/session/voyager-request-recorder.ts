@@ -95,12 +95,13 @@ export function createVoyagerRequestRecorder(
       if (value) headers[key] = value
     }
 
-    const snapshot = VoyagerRequestSnapshotSchema.parse({
+    // Avoid Zod parsing in this hot event handler; requests come from Playwright.
+    const snapshot: VoyagerRequestSnapshot = {
       capturedAt: new Date().toISOString(),
       method,
       url,
       headers,
-    })
+    }
 
     if (dedupe) seen.add(signature)
     requests.push(snapshot)

@@ -23,7 +23,8 @@ describe('ExperienceParser', () => {
     expect(parsed?.positions[0]?.employmentType).toBe('Full-time')
     expect(parsed?.positions[0]?.fromDate).toBe('Jan 2020')
     expect(parsed?.positions[0]?.toDate).toBe('Present')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 
   test('parses a multi-position experience', () => {
@@ -44,7 +45,8 @@ describe('ExperienceParser', () => {
     expect(parsed?.company).toBe('Example Corp')
     expect(parsed?.positions.length).toBe(1)
     expect(parsed?.positions[0]?.title).toBe('Staff Engineer')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 
   test('parses grouped-company experience from flattened detail text', () => {
@@ -80,6 +82,7 @@ describe('ExperienceParser', () => {
 
     expect(parsed).not.toBeNull()
     expect(parsed?.company).toBeUndefined()
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 })

@@ -15,6 +15,7 @@ describe('InterestParser', () => {
     expect(parsed?.name).toBe('Example Company')
     expect(parsed?.category).toBe('company')
     expect(parsed?.linkedinUrl).toBe('https://www.linkedin.com/company/example')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 })

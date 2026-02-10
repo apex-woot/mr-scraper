@@ -16,6 +16,7 @@ describe('EducationParser', () => {
     expect(parsed?.degree).toBe('B.S. Computer Science')
     expect(parsed?.fromDate).toBe('2014')
     expect(parsed?.toDate).toBe('2018')
-    expect(parser.validate(parsed!)).toBe(true)
+    if (!parsed) throw new Error('Expected parse result')
+    expect(parser.validate(parsed)).toBe(true)
   })
 })

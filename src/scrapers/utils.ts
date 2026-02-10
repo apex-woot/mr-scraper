@@ -100,6 +100,7 @@ export async function safeClick(page: Page, selector: string, timeout: number = 
       {
         maxAttempts: 3,
         backoff: 2.0,
+        logLevel: 'debug',
       },
     )
   } catch {
