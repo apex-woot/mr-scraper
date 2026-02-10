@@ -36,3 +36,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 .*.md
 debug_data
+
+# local run artifacts (do not commit)
+.log-runs
+downloads
+session.json
+sessions
