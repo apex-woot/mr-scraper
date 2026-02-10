@@ -62,8 +62,9 @@ export const COMMON_SELECTORS = {
   LEGACY_LIST_ITEM: '.pvs-list__paged-list-item',
 
   // Top-card action menu for profile-level actions
+  PROFILE_TOP_CARD_ROOT: 'section.artdeco-card[data-member-id], main section.artdeco-card, .pv-top-card',
   PROFILE_MORE_ACTIONS_TRIGGER:
-    'button[id$="-profile-overflow-action"], button[aria-label="More actions"], .artdeco-dropdown__trigger[aria-label*="More"]',
+    'button[id$="-profile-overflow-action"], button[aria-label="More actions"], button[aria-label="More actions menu"], button[aria-label*="More actions"], .artdeco-dropdown__trigger[aria-label*="More actions"], .artdeco-dropdown__trigger[aria-label*="More"]',
   PROFILE_SAVE_TO_PDF_ACTION:
-    'div.artdeco-dropdown__item[role="button"][aria-label="Save to PDF"], [aria-label="Save to PDF"]',
+    'div.artdeco-dropdown__item[role="button"][aria-label="Save to PDF"], [role="menuitem"][aria-label="Save to PDF"], [role="menuitem"]:has-text("Save to PDF"), [role="button"][aria-label="Save to PDF"], button:has-text("Save to PDF"), [aria-label="Save to PDF"]',
 } as const
