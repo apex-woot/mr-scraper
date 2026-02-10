@@ -39,6 +39,75 @@ const browser = new BrowserManager({ storageState: 'state.json' });
 await browser.start();
 ```
 
+## Hybrid Scraping (Record in Playwright, Replay in Rust)
+
+If you want a high-throughput Rust scraper, a practical approach is to:
+
+- Use Playwright once to authenticate (login / checkpoints)
+- Record the session headers from a real Voyager API request
+- Replay those headers with a lightweight Rust HTTP client
+
+Record a replay artifact:
+
+```bash
+bun run scrape:session:rust -- "https://www.linkedin.com/in/sample-user/" --out sessions/voyager-session.json
+```
+
+Capture Voyager requests while running the full person scrape (recommended for building a Rust API scraper, since the existing scrape already triggers the needed Voyager traffic):
+
+```bash
+bun run scrape:profile:voyager -- "https://www.linkedin.com/in/sample-user/"
+```
+
+This writes:
+
+- `sessions/voyager-session.json` (cookie/csrf/user-agent for replay)
+- `sessions/voyager-requests.json` (deduped list of Voyager request URLs + selected headers)
+
+The recorder writes a JSON file containing `cookieHeader`, `csrfToken`, and `userAgent` from a Voyager request.
+
+Minimal Rust replay example (placeholders):
+
+```rust
+use reqwest::header;
+use serde::Deserialize;
+use std::fs;
+
+#[derive(Deserialize)]
+struct Session {
+    cookieHeader: String,
+    csrfToken: String,
+    userAgent: String,
+    restliProtocolVersion: String,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let raw = fs::read_to_string("sessions/voyager-session.json")?;
+    let s: Session = serde_json::from_str(&raw)?;
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert(header::COOKIE, s.cookieHeader.parse()?);
+    headers.insert("csrf-token", s.csrfToken.parse()?);
+    headers.insert(header::USER_AGENT, s.userAgent.parse()?);
+    headers.insert("x-restli-protocol-version", s.restliProtocolVersion.parse()?);
+
+    let client = reqwest::Client::builder().default_headers(headers).build()?;
+    let resp = client
+        .get("https://www.linkedin.com/voyager/api/identity/profiles/sample-user")
+        .send()
+        .await?;
+
+    println!("status: {}", resp.status());
+    Ok(())
+}
+```
+
+Notes:
+
+- The `csrf-token` header must be consistent with `JSESSIONID`.
+- Cookies are IP-bound in practice (record and replay on the same IP / proxy).
+
 ## Development
 
 ```bash
