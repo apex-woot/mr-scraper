@@ -3,6 +3,12 @@ import type { ProgressCallback } from '../../callbacks'
 import { ScrapingError } from '../../exceptions'
 import type { PersonData } from '../../models'
 import { createPerson } from '../../models'
+import {
+  createVoyagerRequestRecorder,
+  createVoyagerSessionRecorder,
+  type VoyagerReplaySession,
+  type VoyagerRequestSnapshot,
+} from '../../session'
 import { log } from '../../utils/logger'
 import { ensureLoggedIn, navigateAndWait, scrollPageToBottom, scrollPageToHalf, waitAndFocus } from '../utils'
 import { getAccomplishments } from './accomplishments'
@@ -30,6 +36,30 @@ export interface PersonScraperOptions {
     accomplishments?: boolean
     contacts?: boolean
   }
+}
+
+export interface PersonVoyagerCaptureOptions {
+  session?: {
+    enabled?: boolean
+    timeoutMs?: number
+    redactLogs?: boolean
+  }
+  requests?: {
+    enabled?: boolean
+    dedupe?: boolean
+    maxRequests?: number
+    includeHeaders?: readonly string[]
+  }
+}
+
+export interface PersonScrapeWithVoyagerOptions extends PersonScraperOptions {
+  voyagerCapture?: PersonVoyagerCaptureOptions
+}
+
+export interface PersonScrapeWithVoyagerResult {
+  person: PersonData
+  voyagerSession?: VoyagerReplaySession
+  voyagerRequests?: VoyagerRequestSnapshot[]
 }
 
 function resolveDomExtractors(options?: PersonScraperOptions): PersonDomExtractorToggles {
@@ -174,6 +204,60 @@ export async function scrapePerson(
     const message = e instanceof Error ? e.message : String(e)
     await callback?.onError(`Failed to scrape person profile: ${message}`, e instanceof Error ? e : undefined)
     throw new ScrapingError(`Failed to scrape person profile: ${message}`)
+  }
+}
+
+/**
+ * Wrapper around scrapePerson that records Voyager request metadata during the scrape.
+ * This is best-effort and never fails the scrape if capture times out.
+ */
+export async function scrapePersonWithVoyagerCapture(
+  page: Page,
+  linkedinUrl: string,
+  options: PersonScrapeWithVoyagerOptions = {},
+): Promise<PersonScrapeWithVoyagerResult> {
+  const { voyagerCapture, ...scrapeOptions } = options
+
+  const sessionEnabled = voyagerCapture?.session?.enabled ?? true
+  const requestsEnabled = voyagerCapture?.requests?.enabled ?? true
+
+  const sessionRecorder = sessionEnabled
+    ? createVoyagerSessionRecorder(page, {
+        matchers: ['/voyager/api/'],
+        autoStop: true,
+        redactLogs: voyagerCapture?.session?.redactLogs ?? true,
+      })
+    : undefined
+
+  const requestRecorder = requestsEnabled
+    ? createVoyagerRequestRecorder(page, {
+        matchers: ['/voyager/api/'],
+        dedupe: voyagerCapture?.requests?.dedupe ?? true,
+        maxRequests: voyagerCapture?.requests?.maxRequests ?? 200,
+        includeHeaders: voyagerCapture?.requests?.includeHeaders,
+      })
+    : undefined
+
+  sessionRecorder?.start()
+  requestRecorder?.start()
+
+  const sessionPromise = sessionRecorder?.waitForSession({ timeoutMs: voyagerCapture?.session?.timeoutMs ?? 45000 })
+
+  try {
+    const person = await scrapePerson(page, linkedinUrl, scrapeOptions)
+
+    const voyagerSession = sessionPromise ? await sessionPromise.catch(() => undefined) : undefined
+
+    const voyagerRequests = requestRecorder ? [...requestRecorder.getRequests()] : undefined
+
+    return {
+      person,
+      voyagerSession,
+      voyagerRequests,
+    }
+  } finally {
+    sessionRecorder?.stop()
+    requestRecorder?.stop()
   }
 }
 

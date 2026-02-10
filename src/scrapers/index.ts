@@ -4,6 +4,9 @@ export type {
   PersonDomExtractorToggles,
   PersonScraperConfig,
   PersonScraperOptions,
+  PersonScrapeWithVoyagerOptions,
+  PersonScrapeWithVoyagerResult,
+  PersonVoyagerCaptureOptions,
   ResumeDownloadOptions,
 } from './person'
 export {
@@ -11,6 +14,7 @@ export {
   PersonDomExtractorToggleSchema,
   PersonScraperConfigSchema,
   scrapePerson,
+  scrapePersonWithVoyagerCapture,
 } from './person'
 
 // Utility functions for advanced usage
