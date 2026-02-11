@@ -35,7 +35,11 @@ function detectEmptyReason(
   return 'unknown-empty'
 }
 
-export async function getPublications(page: Page, baseUrl: string): Promise<Accomplishment[]> {
+export async function getPublications(
+  page: Page,
+  baseUrl: string,
+  includeRaw: boolean = false,
+): Promise<Accomplishment[]> {
   try {
     const normalizedBase = normalizeBaseUrl(baseUrl)
     const expectedPath = '/details/publications'
@@ -48,6 +52,7 @@ export async function getPublications(page: Page, baseUrl: string): Promise<Acco
       }),
       textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new AccomplishmentParser(),
+      includeRaw,
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,
       deduplicateKey: (publication) => `${publication.category}|${publication.title}`,

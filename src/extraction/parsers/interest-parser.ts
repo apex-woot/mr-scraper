@@ -17,7 +17,7 @@ export class InterestParser implements Parser<Interest> {
       name,
       category: input.context.category ?? 'unknown',
       linkedinUrl,
-      plainText: toPlainText(texts),
+      ...(input.includeRaw ? { raw: toPlainText(texts) } : {}),
     }
   }
 

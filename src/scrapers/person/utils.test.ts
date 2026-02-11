@@ -105,7 +105,7 @@ describe('parseDateRange', () => {
   })
 })
 
-describe('plainText helpers', () => {
+describe('raw text helpers', () => {
   test('normalizes whitespace and removes adjacent duplicates', () => {
     const result = normalizePlainTextLines([
       '  US   US10424882B2  ',

@@ -25,7 +25,7 @@ export function detectExperienceLayout(lines: string[]): ExperienceLayout {
   return 'single'
 }
 
-export function parseGroupedPositions(lines: string[]): Position[] {
+export function parseGroupedPositions(lines: string[], includeRaw: boolean): Position[] {
   const normalized = normalize(lines)
   const body = stripGroupHeaderNoise(normalized.slice(1))
   const segments = toGroupedSegments(body)
@@ -58,7 +58,7 @@ export function parseGroupedPositions(lines: string[]): Position[] {
         duration: parsedDate.duration ?? undefined,
         location,
         description,
-        plainText: toPlainText(plainLines),
+        ...(includeRaw ? { raw: toPlainText(plainLines) } : {}),
       } satisfies Position
     })
     .filter((position) => !!position.title)

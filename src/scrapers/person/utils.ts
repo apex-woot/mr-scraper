@@ -158,7 +158,7 @@ export function mapContactHeadingToType(heading: string): string | null {
 }
 
 /**
- * Normalizes extracted lines to stable text suitable for plainText fields.
+ * Normalizes extracted lines to stable text suitable for raw fields.
  */
 export function normalizePlainTextLines(lines: Array<string | null | undefined>): string[] {
   const normalized = lines

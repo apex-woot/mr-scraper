@@ -7,12 +7,13 @@ import type { Education } from '../../models'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
 
-export async function getEducations(page: Page, baseUrl: string): Promise<Education[]> {
+export async function getEducations(page: Page, baseUrl: string, includeRaw: boolean = false): Promise<Education[]> {
   try {
     const pipeline = new ExtractionPipeline<Education>({
       pageExtractor: new EducationPageExtractor(),
       textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new EducationParser(),
+      includeRaw,
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,
       deduplicateKey: (edu) => `${edu.institutionName}|${edu.degree}|${edu.fromDate}`,

@@ -21,17 +21,20 @@ describe('experience ir', () => {
   })
 
   test('parses grouped positions from flattened lines', () => {
-    const positions = parseGroupedPositions([
-      'Example Labs',
-      '12 yrs 3 mos',
-      'Principal Engineer - Embedded',
-      'Full-time',
-      '2023 - Present · 3 yrs',
-      'Remote',
-      'Senior Mechanical Engineer',
-      '2014 - 2023 · 9 yrs',
-      'Austin, Texas, United States',
-    ])
+    const positions = parseGroupedPositions(
+      [
+        'Example Labs',
+        '12 yrs 3 mos',
+        'Principal Engineer - Embedded',
+        'Full-time',
+        '2023 - Present · 3 yrs',
+        'Remote',
+        'Senior Mechanical Engineer',
+        '2014 - 2023 · 9 yrs',
+        'Austin, Texas, United States',
+      ],
+      false,
+    )
 
     expect(positions.length).toBe(2)
     expect(positions[0]?.employmentType).toBe('Full-time')
@@ -40,18 +43,21 @@ describe('experience ir', () => {
   })
 
   test('does not treat location lines as titles between grouped roles', () => {
-    const positions = parseGroupedPositions([
-      'Example Labs',
-      '12 yrs 3 mos',
-      'Principal Engineer - Embedded',
-      '2023 - Present · 3 yrs',
-      'Remote',
-      'Senior Mechanical Engineer',
-      '2014 - 2023 · 9 yrs',
-      'Austin, Texas, United States',
-      'Mechanical Engineer',
-      '2010 - 2014 · 4 yrs',
-    ])
+    const positions = parseGroupedPositions(
+      [
+        'Example Labs',
+        '12 yrs 3 mos',
+        'Principal Engineer - Embedded',
+        '2023 - Present · 3 yrs',
+        'Remote',
+        'Senior Mechanical Engineer',
+        '2014 - 2023 · 9 yrs',
+        'Austin, Texas, United States',
+        'Mechanical Engineer',
+        '2010 - 2014 · 4 yrs',
+      ],
+      false,
+    )
 
     expect(positions.length).toBe(3)
     expect(positions[1]?.title).toBe('Senior Mechanical Engineer')

@@ -7,12 +7,13 @@ import type { Experience } from '../../models/person'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
 
-export async function getExperiences(page: Page, baseUrl: string): Promise<Experience[]> {
+export async function getExperiences(page: Page, baseUrl: string, includeRaw: boolean = false): Promise<Experience[]> {
   try {
     const pipeline = new ExtractionPipeline<Experience>({
       pageExtractor: new ExperiencePageExtractor(),
       textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new ExperienceParser(),
+      includeRaw,
       confidenceThreshold: 0.3,
       captureHtmlOnFailure: true,
     })

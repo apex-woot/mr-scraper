@@ -25,6 +25,7 @@ import { downloadResumePdf, type ResumeDownloadOptions } from './resume'
 
 export interface PersonScraperOptions {
   callback?: ProgressCallback
+  raw?: boolean
   domExtractors?: Partial<PersonDomExtractorToggles>
   resume?: ResumeDownloadOptions
   sections?: {
@@ -146,7 +147,9 @@ export async function scrapePerson(
       }
     }
 
-    const publications = domExtractors.publications ? await getPublications(page, linkedinUrl) : []
+    const publications = domExtractors.publications
+      ? await getPublications(page, linkedinUrl, options?.raw === true)
+      : []
     if (domExtractors.publications) log.debug(`Got ${publications.length} publications`)
 
     if (domExtractors.experiences || domExtractors.educations) {
@@ -154,19 +157,21 @@ export async function scrapePerson(
       await scrollPageToBottom(page, 0.5, 3)
     }
 
-    const experiences = domExtractors.experiences ? await getExperiences(page, linkedinUrl) : []
+    const experiences = domExtractors.experiences ? await getExperiences(page, linkedinUrl, options?.raw === true) : []
     if (domExtractors.experiences) log.debug(`Got ${experiences.length} experiences`)
 
-    const educations = domExtractors.educations ? await getEducations(page, linkedinUrl) : []
+    const educations = domExtractors.educations ? await getEducations(page, linkedinUrl, options?.raw === true) : []
     if (domExtractors.educations) log.debug(`Got ${educations.length} educations`)
 
-    const patents = domExtractors.patents ? await getPatents(page, linkedinUrl) : []
+    const patents = domExtractors.patents ? await getPatents(page, linkedinUrl, options?.raw === true) : []
     if (domExtractors.patents) log.debug(`Got ${patents.length} patents`)
 
-    const interests = domExtractors.interests ? await getInterests(page, linkedinUrl) : []
+    const interests = domExtractors.interests ? await getInterests(page, linkedinUrl, options?.raw === true) : []
     if (domExtractors.interests) log.debug(`Got ${interests.length} interests`)
 
-    const accomplishments = domExtractors.accomplishments ? await getAccomplishments(page, linkedinUrl) : []
+    const accomplishments = domExtractors.accomplishments
+      ? await getAccomplishments(page, linkedinUrl, options?.raw === true)
+      : []
     if (domExtractors.accomplishments) log.debug(`Got ${accomplishments.length} accomplishments`)
 
     const combinedAccomplishments = deduplicateItems(

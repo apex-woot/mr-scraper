@@ -6,12 +6,13 @@ import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../.
 import type { Interest } from '../../models'
 import { log } from '../../utils/logger'
 
-export async function getInterests(page: Page, baseUrl: string): Promise<Interest[]> {
+export async function getInterests(page: Page, baseUrl: string, includeRaw: boolean = false): Promise<Interest[]> {
   try {
     const pipeline = new ExtractionPipeline<Interest>({
       pageExtractor: new InterestPageExtractor(),
       textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new InterestParser(),
+      includeRaw,
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,
       deduplicateKey: (interest) => `${interest.category}|${interest.name}|${interest.linkedinUrl || ''}`,

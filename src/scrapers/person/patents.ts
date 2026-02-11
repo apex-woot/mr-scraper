@@ -22,12 +22,13 @@ function detectPatentEmptyReason(
   return 'unknown-empty'
 }
 
-export async function getPatents(page: Page, baseUrl: string): Promise<Patent[]> {
+export async function getPatents(page: Page, baseUrl: string, includeRaw: boolean = false): Promise<Patent[]> {
   try {
     const pipeline = new ExtractionPipeline<Patent>({
       pageExtractor: new PatentPageExtractor(),
       textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new PatentParser(),
+      includeRaw,
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,
       deduplicateKey: (patent) => `${patent.title}|${patent.number || ''}`,

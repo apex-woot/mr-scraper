@@ -36,7 +36,7 @@ export class EducationParser implements Parser<Education> {
       fromDate: fromDate ?? undefined,
       toDate: toDate ?? undefined,
       description,
-      plainText: toPlainText(texts),
+      ...(input.includeRaw ? { raw: toPlainText(texts) } : {}),
     }
   }
 

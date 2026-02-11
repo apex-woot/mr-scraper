@@ -67,7 +67,7 @@ export class AccomplishmentParser implements Parser<Accomplishment> {
       credentialId,
       credentialUrl,
       description,
-      plainText: toPlainText(input.texts),
+      ...(input.includeRaw ? { raw: toPlainText(input.texts) } : {}),
     }
   }
 

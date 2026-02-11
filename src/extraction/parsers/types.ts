@@ -6,6 +6,7 @@ export interface ParseInput {
   links: ExtractedLink[]
   subItems?: ParseInput[]
   context: Record<string, string>
+  includeRaw?: boolean
 }
 
 export interface Parser<T> {

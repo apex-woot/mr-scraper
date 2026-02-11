@@ -19,7 +19,7 @@ export class ExperienceParser implements Parser<Experience> {
     if (input.subItems && input.subItems.length > 0) {
       const company = sanitizeCompanyCandidate(texts[0])
       const positions = input.subItems
-        .map((subItem) => parsePosition(subItem.texts))
+        .map((subItem) => parsePosition(subItem.texts, input.includeRaw === true))
         .filter((position): position is Position => !!position)
 
       if (positions.length === 0) return null
@@ -27,23 +27,23 @@ export class ExperienceParser implements Parser<Experience> {
       return {
         company,
         companyUrl: input.links[0]?.url,
-        plainText: toPlainText(input.texts),
+        ...(input.includeRaw ? { raw: toPlainText(input.texts) } : {}),
         positions,
       }
     }
 
     if (detectExperienceLayout(texts) === 'grouped') {
-      const grouped = parseGroupedExperience(texts, input.links)
+      const grouped = parseGroupedExperience(texts, input.links, input.includeRaw === true)
       if (grouped && this.validate(grouped)) return grouped
     }
 
-    const parsed = parseSingleExperience(texts, input.links)
+    const parsed = parseSingleExperience(texts, input.links, input.includeRaw === true)
     if (!parsed) return null
 
     return {
       company: parsed.company,
       companyUrl: input.links[0]?.url,
-      plainText: toPlainText(input.texts),
+      ...(input.includeRaw ? { raw: toPlainText(input.texts) } : {}),
       positions: [parsed.position],
     }
   }
@@ -60,17 +60,17 @@ export class ExperienceParser implements Parser<Experience> {
   }
 }
 
-function parseGroupedExperience(texts: string[], links: ExtractedLink[]): Experience | null {
+function parseGroupedExperience(texts: string[], links: ExtractedLink[], includeRaw: boolean): Experience | null {
   const company = sanitizeCompanyCandidate(texts[0])
   if (!company) return null
 
-  const positions = parseGroupedPositions(texts)
+  const positions = parseGroupedPositions(texts, includeRaw)
   if (positions.length === 0) return null
 
   return {
     company,
     companyUrl: links[0]?.url,
-    plainText: toPlainText(texts),
+    ...(includeRaw ? { raw: toPlainText(texts) } : {}),
     positions,
   }
 }
@@ -78,6 +78,7 @@ function parseGroupedExperience(texts: string[], links: ExtractedLink[]): Experi
 function parseSingleExperience(
   texts: string[],
   links: ExtractedLink[],
+  includeRaw: boolean,
 ): { company?: string; position: Position } | null {
   const title = texts[0]
   if (!title) return null
@@ -102,7 +103,7 @@ function parseSingleExperience(
     duration: meta.duration,
     location: meta.location,
     description: meta.description,
-    plainText: toPlainText(texts),
+    ...(includeRaw ? { raw: toPlainText(texts) } : {}),
   }
 
   return {
@@ -111,7 +112,7 @@ function parseSingleExperience(
   }
 }
 
-function parsePosition(texts: string[]): Position | null {
+function parsePosition(texts: string[], includeRaw: boolean): Position | null {
   const lines = texts.map((t) => t.trim()).filter(Boolean)
   if (lines.length === 0) return null
 
@@ -131,7 +132,7 @@ function parsePosition(texts: string[]): Position | null {
     duration: meta.duration,
     location: meta.location,
     description: meta.description,
-    plainText: toPlainText(lines),
+    ...(includeRaw ? { raw: toPlainText(lines) } : {}),
   }
 }
 

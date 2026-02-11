@@ -26,6 +26,7 @@ export interface PipelineConfig<T> {
   pageExtractor: PageExtractor
   textExtractors: TextExtractor[]
   parser: Parser<T>
+  includeRaw?: boolean
   confidenceThreshold?: number
   deduplicateKey?: (item: T) => string
   captureHtmlOnFailure?: boolean
@@ -142,8 +143,10 @@ export class ExtractionPipeline<T> {
                 texts: subItem.texts,
                 links: subItem.links,
                 context,
+                includeRaw: this.config.includeRaw ?? false,
               })),
               context,
+              includeRaw: this.config.includeRaw ?? false,
             })
 
             if (parsed && this.config.parser.validate(parsed)) {
@@ -188,6 +191,7 @@ export class ExtractionPipeline<T> {
       texts: extracted.texts,
       links: extracted.links,
       context,
+      includeRaw: this.config.includeRaw ?? false,
     })
 
     if (parsed && this.config.parser.validate(parsed)) {
@@ -221,6 +225,7 @@ export class ExtractionPipeline<T> {
             isExternal: true,
           })),
         context: { heading: section.heading },
+        includeRaw: this.config.includeRaw ?? false,
       })
 
       if (parsed && this.config.parser.validate(parsed)) {

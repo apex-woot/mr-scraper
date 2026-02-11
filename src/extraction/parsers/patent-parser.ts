@@ -48,7 +48,7 @@ export class PatentParser implements Parser<Patent> {
       issuedDate,
       url,
       description,
-      plainText: toPlainText(lines),
+      ...(input.includeRaw ? { raw: toPlainText(lines) } : {}),
     }
   }
 

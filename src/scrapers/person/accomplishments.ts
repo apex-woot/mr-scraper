@@ -7,7 +7,11 @@ import type { Accomplishment } from '../../models'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
 
-export async function getAccomplishments(page: Page, baseUrl: string): Promise<Accomplishment[]> {
+export async function getAccomplishments(
+  page: Page,
+  baseUrl: string,
+  includeRaw: boolean = false,
+): Promise<Accomplishment[]> {
   const accomplishments: Accomplishment[] = []
 
   const accomplishmentSections: Array<[string, string]> = [
@@ -30,6 +34,7 @@ export async function getAccomplishments(page: Page, baseUrl: string): Promise<A
         }),
         textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
         parser: new AccomplishmentParser(),
+        includeRaw,
         confidenceThreshold: 0.25,
         captureHtmlOnFailure: true,
       })
