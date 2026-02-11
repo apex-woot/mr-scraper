@@ -47,6 +47,7 @@ function parseDetailsUrl(input: string): {
 async function getPublications(
   baseProfileUrl: string,
   page: InstanceType<typeof BrowserManager>['page'],
+  includeRaw: boolean,
 ): Promise<Accomplishment[]> {
   const pipeline = new ExtractionPipeline<Accomplishment>({
     pageExtractor: new AccomplishmentPageExtractor({
@@ -55,6 +56,7 @@ async function getPublications(
     }),
     textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
     parser: new AccomplishmentParser(),
+    includeRaw,
     confidenceThreshold: 0.25,
     captureHtmlOnFailure: true,
   })
@@ -79,7 +81,7 @@ async function runExample() {
   const { baseProfileUrl, section } = parseDetailsUrl(inputUrl)
   const isHeadless = process.argv.includes('--headless')
   const shouldPrint = process.argv.includes('--print')
-  const includePlainText = process.argv.includes('--include-plain-text')
+  const includeRaw = process.argv.includes('--raw')
 
   console.log(`\nInput details URL: ${inputUrl}`)
   console.log(`Profile URL: ${baseProfileUrl}`)
@@ -146,15 +148,12 @@ async function runExample() {
     }
 
     if (section === 'publications') {
-      const publications = await getPublications(baseProfileUrl, browser.page)
-      const normalizedPublications = includePlainText
-        ? publications
-        : publications.map(({ plainText: _plainText, ...publication }) => publication)
+      const publications = await getPublications(baseProfileUrl, browser.page, includeRaw)
       const output = {
         inputUrl,
         section,
-        count: normalizedPublications.length,
-        publications: normalizedPublications,
+        count: publications.length,
+        publications,
       }
 
       if (shouldPrint) {

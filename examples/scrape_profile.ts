@@ -15,6 +15,7 @@ async function runExample() {
 
   const isHeadless = process.argv.includes('--headless')
   const onlyExperience = process.argv.includes('--only-experience')
+  const includeRaw = process.argv.includes('--raw')
 
   console.log(`\nStarting example scraper for: ${linkedinUrl}`)
   console.log(`Mode: ${isHeadless ? 'Headless' : 'Headed (Browser Visible)'}`)
@@ -40,6 +41,7 @@ async function runExample() {
 
     const profile = await scrapePerson(browser.page, linkedinUrl, {
       callback: createConsoleCallback(),
+      raw: includeRaw,
       sections: onlyExperience
         ? {
             about: false,
