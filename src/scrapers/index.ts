@@ -1,5 +1,7 @@
 // Functional scraper APIs
 
+export type { JobDomExtractorToggles, JobScraperOptions, JobSearchEntry, JobSearchResultsOptions } from './jobs'
+export { collectVisibleEntriesFromPage, JobDomExtractorToggleSchema, scrapeJob, scrapeJobSearchResults } from './jobs'
 export type {
   PersonDomExtractorToggles,
   PersonScraperConfig,

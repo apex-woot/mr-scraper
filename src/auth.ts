@@ -1,4 +1,5 @@
 import type { Page } from 'playwright'
+import { z } from 'zod'
 import { AuthenticationError } from './exceptions'
 import { detectRateLimit } from './utils'
 import { log } from './utils/logger'
@@ -30,8 +31,6 @@ export function loadCredentialsFromEnv(): {
 
   return { email, password }
 }
-
-import { z } from 'zod'
 
 export const LoginOptionsSchema = z.object({
   email: z.string().optional(),

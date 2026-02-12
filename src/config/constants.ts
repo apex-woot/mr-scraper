@@ -68,3 +68,28 @@ export const COMMON_SELECTORS = {
   PROFILE_SAVE_TO_PDF_ACTION:
     'div.artdeco-dropdown__item[role="button"][aria-label="Save to PDF"], [role="menuitem"][aria-label="Save to PDF"], [role="menuitem"]:has-text("Save to PDF"), [role="button"][aria-label="Save to PDF"], button:has-text("Save to PDF"), [aria-label="Save to PDF"]',
 } as const
+
+/**
+ * Common selectors for LinkedIn job pages.
+ * Kept centralized to make markup updates easier.
+ */
+export const JOB_SELECTORS = {
+  TOP_CARD_ROOT: [
+    'main section:has(h1)',
+    '[data-test-id="job-details-top-card"], [data-testid="job-details-top-card"]',
+    'main [class*="job-details" i]',
+  ],
+  DETAILS_ROOT: [
+    'section:has(h2:has-text("Job details"))',
+    '[data-test-id="job-details-criteria"], [data-testid="job-details-criteria"]',
+    'main [class*="job-details" i]',
+  ],
+  DESCRIPTION_ROOT: [
+    'div[data-testid="expandable-text-box"]',
+    '#job-details',
+    '[data-test-id="job-details"]',
+    'section:has(h2:has-text("About the job"))',
+    'section:has(h2:has-text("Job description"))',
+    'main [class*="jobs-description" i]',
+  ],
+} as const
