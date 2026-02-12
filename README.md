@@ -1,6 +1,6 @@
 # @apexwoot/mr-scraper
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![License: All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
 A high-performance LinkedIn person-profile scraper for **Bun + Node.js**. Built with **Playwright** and **Zod** for robust automation and type-safe data extraction.

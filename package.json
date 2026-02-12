@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/apex-woot/mr-scraper#readme",
   "author": "apexwoot",
-  "license": "GPL-3.0",
+  "license": "UNLICENSED",
   "engines": {
     "node": ">=18.0.0"
   },
