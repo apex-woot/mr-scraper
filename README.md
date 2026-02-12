@@ -1,4 +1,4 @@
-# @apexwoot/mr-scraper
+# @apex-woot/mr-scraper
 
 [![License: All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)

@@ -10,7 +10,7 @@ This is an open source project. Do not include real personal information in comm
 
 ## Repository Focus
 
-- Package name: `@apexwoot/mr-scraper`
+- Package name: `@apex-woot/mr-scraper`
 - Runtime/tooling: Bun, Playwright, Zod, Biome, TypeScript strict mode
 - Primary goal: reliable LinkedIn person profile extraction with typed outputs
 

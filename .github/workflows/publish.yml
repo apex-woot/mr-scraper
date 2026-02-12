@@ -27,7 +27,14 @@ jobs:
       - name: Run linter
         run: bun run lint
 
+      - name: Configure npm auth for GitHub Packages
+        run: |
+          echo "@apex-woot:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
       - name: Publish to GitHub Packages
         run: bun publish --registry https://npm.pkg.github.com --access restricted
         env:
-          NPM_CONFIG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
