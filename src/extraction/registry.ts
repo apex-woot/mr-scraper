@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises'
+import { PERSON_PAGE_SELECTOR_SETS } from './page-extractors/selector-sets'
 
 export interface SectionSelectorSet {
   itemSelectors: string[]
@@ -63,15 +64,11 @@ const DEFAULT_VERSION: SelectorVersion = {
       containerSelectors: ['dialog', '[role="dialog"]', '.artdeco-modal'],
     },
     'top-card': {
-      itemSelectors: ['section.artdeco-card[data-member-id]', 'main section.artdeco-card'],
+      itemSelectors: [...PERSON_PAGE_SELECTOR_SETS.TOP_CARD_ROOT],
       containerSelectors: ['main'],
     },
     about: {
-      itemSelectors: [
-        '[data-testid="expandable-text-box"]',
-        '[data-view-name="profile-card-about"]',
-        '[data-view-name="profile-card"]',
-      ],
+      itemSelectors: [...PERSON_PAGE_SELECTOR_SETS.ABOUT_ROOT],
       containerSelectors: ['main'],
     },
   },

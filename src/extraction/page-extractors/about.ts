@@ -1,11 +1,8 @@
 import type { Locator } from 'playwright'
+import { PERSON_PAGE_SELECTOR_SETS } from './selector-sets'
 import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
-const ABOUT_ROOT_SELECTORS = [
-  '[data-testid="expandable-text-box"]',
-  '[data-view-name="profile-card-about"]',
-  '[data-view-name="profile-card"]',
-] as const
+const ABOUT_ROOT_SELECTORS = PERSON_PAGE_SELECTOR_SETS.ABOUT_ROOT
 
 export class AboutPageExtractor implements PageExtractor {
   readonly sectionName = 'about'

@@ -199,7 +199,7 @@ export async function scrapePerson(
       contacts,
       resumePdfPath: resumeDownload?.resumePdfPath,
       resumeDownloadLink: resumeDownload?.resumeDownloadLink,
-    } as PersonData)
+    })
 
     log.debug('Scraping complete')
     await callback?.onComplete('person', person)

@@ -1,16 +1,8 @@
 import type { Locator } from 'playwright'
-import { COMMON_SELECTORS } from '../../config/constants'
+import { PERSON_PAGE_SELECTOR_SETS } from './selector-sets'
 import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
-const ROOT_SELECTORS = [
-  'main section.artdeco-card[data-member-id]:has(h1)',
-  'section.artdeco-card[data-member-id]:has(h1)',
-  '.pv-top-card:has(h1)',
-  '[data-view-name*="top-card" i]:has(h1)',
-  'main section.artdeco-card:has(h1)',
-  COMMON_SELECTORS.PROFILE_TOP_CARD_ROOT,
-  'main section:has(h1)',
-] as const
+const ROOT_SELECTORS = PERSON_PAGE_SELECTOR_SETS.TOP_CARD_ROOT
 
 export class TopCardPageExtractor implements PageExtractor {
   readonly sectionName = 'top-card'
