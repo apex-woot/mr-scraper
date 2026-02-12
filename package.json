@@ -77,7 +77,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "build": "bun run build.ts",
-    "prepare": "command -v husky >/dev/null 2>&1 && husky",
+    "prepare": "if [ \"$CI\" = \"true\" ]; then exit 0; fi; command -v husky >/dev/null 2>&1 && husky || true",
     "prepublishOnly": "bun run build && bun test"
   }
 }
